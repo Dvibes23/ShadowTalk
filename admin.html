@@ -2,26 +2,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Admin Panel - ShadowTalk</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Admin Login</h1>
-  <div id="login-box">
-    <input type="password" id="adminPass" placeholder="Enter admin password" />
-    <button onclick="login()">Login</button>
+  <h2>Admin Panel</h2>
+
+  <div id="auth">
+    <input type="password" id="adminPass" placeholder="Enter Admin Password">
+    <button onclick="verify()">Login</button>
   </div>
 
-  <div id="adminPanel" style="display:none;">
-    <h2>Active Rooms</h2>
+  <div id="adminPanel" class="hidden">
+    <h3>Room Management</h3>
+    <button onclick="getRooms()">Show All Active Rooms</button>
     <ul id="roomList"></ul>
-    <h2>Users in Room: <span id="currentRoom"></span></h2>
-    <ul id="userList"></ul>
-    <input type="text" id="targetUser" placeholder="User to kick" />
-    <button onclick="kickUser()">Kick</button>
-    <button onclick="loadLogs()">View Logs</button>
-    <pre id="logs"></pre>
+
+    <div>
+      <input type="text" id="roomToCheck" placeholder="Enter room name">
+      <button onclick="getUsers()">Get Users</button>
+      <ul id="userList"></ul>
+    </div>
+
+    <div>
+      <input type="text" id="userToKick" placeholder="Username to kick/mute">
+      <input type="text" id="roomTarget" placeholder="Room name">
+      <button onclick="kick()">Kick</button>
+      <button onclick="mute()">Mute</button>
+    </div>
+
+    <h3>View Logs</h3>
+    <input type="text" id="logRoom" placeholder="Room for logs">
+    <button onclick="getLogs()">View Logs</button>
+    <pre id="logBox"></pre>
+
+    <h3>Reports</h3>
+    <button onclick="getReports()">View Reports</button>
+    <pre id="reportBox"></pre>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
