@@ -1,81 +1,78 @@
 
-const socket = io();
-let isAuthenticated = false;
-
-function verify() {
-  const pass = document.getElementById('adminPass').value;
-  if (pass === "AdUnNi") {
-    document.getElementById("auth").style.display = "none";
-    document.getElementById("adminPanel").classList.remove("hidden");
-    isAuthenticated = true;
-  } else {
-    alert("Incorrect admin password.");
+document.addEventListener('DOMContentLoaded', () => {
+  const passwordPrompt = prompt('Enter admin password:');
+  if (passwordPrompt !== 'AdUnNi') {
+    alert('Access denied!');
+    window.location.href = '/';
+    return;
   }
-}
 
-function getRooms() {
-  if (!isAuthenticated) return;
-  socket.emit('getRooms');
-}
+  const roomListBtn = document.getElementById('roomListBtn');
+  const getUsersBtn = document.getElementById('getUsersBtn');
+  const kickBtn = document.getElementById('kickBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const viewLogsBtn = document.getElementById('viewLogsBtn');
+  const viewReportsBtn = document.getElementById('viewReportsBtn');
 
-socket.on('roomList', (rooms) => {
-  const list = document.getElementById("roomList");
-  list.innerHTML = '';
-  rooms.forEach(room => {
-    const li = document.createElement("li");
-    li.textContent = room;
-    list.appendChild(li);
-  });
-});
+  roomListBtn.onclick = () => {
+    fetch('/admin/rooms')
+      .then(res => res.json())
+      .then(data => {
+        alert('Active Rooms:\n' + data.rooms.join('\n'));
+      });
+  };
 
-function getUsers() {
-  const room = document.getElementById('roomToCheck').value;
-  if (!room) return alert("Enter a room name.");
-  socket.emit("getUsers", room);
-}
+  getUsersBtn.onclick = () => {
+    const room = document.getElementById('roomInput').value;
+    fetch(`/admin/room-users/${room}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert(`Users in ${room}:\n` + data.users.join('\n'));
+        }
+      });
+  };
 
-socket.on("userList", ({ room, users }) => {
-  const list = document.getElementById("userList");
-  list.innerHTML = '';
-  users.forEach(user => {
-    const li = document.createElement("li");
-    li.textContent = `${user} (in ${room})`;
-    list.appendChild(li);
-  });
-});
+  kickBtn.onclick = () => {
+    const user = document.getElementById('userInput').value;
+    const room = document.getElementById('roomInput').value;
+    fetch('/admin/kick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, room })
+    })
+      .then(res => res.json())
+      .then(data => alert(data.message));
+  };
 
-function kick() {
-  const user = document.getElementById("userToKick").value;
-  const room = document.getElementById("roomTarget").value;
-  if (!user || !room) return alert("Enter both username and room name.");
-  socket.emit("kick", { target: user, room });
-}
+  muteBtn.onclick = () => {
+    const user = document.getElementById('userInput').value;
+    const room = document.getElementById('roomInput').value;
+    fetch('/admin/mute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, room })
+    })
+      .then(res => res.json())
+      .then(data => alert(data.message));
+  };
 
-function mute() {
-  const user = document.getElementById("userToKick").value;
-  const room = document.getElementById("roomTarget").value;
-  if (!user || !room) return alert("Enter both username and room name.");
-  socket.emit("mute", { target: user, room });
-}
+  viewLogsBtn.onclick = () => {
+    const room = document.getElementById('logRoomInput').value;
+    fetch(`/admin/logs/${room}`)
+      .then(res => res.json())
+      .then(data => {
+        alert(`Logs for ${room}:\n` + data.logs.join('\n'));
+      });
+  };
 
-function getLogs() {
-  const room = document.getElementById("logRoom").value;
-  if (!room) return alert("Enter a room name for logs.");
-  socket.emit("getLogs", room);
-}
-
-socket.on("logs", (data) => {
-  document.getElementById("logBox").textContent = data.join("\n");
-});
-
-function getReports() {
-  socket.emit("getReports");
-}
-
-socket.on("reports", (data) => {
-  const reportBox = document.getElementById("reportBox");
-  reportBox.innerHTML = "";
-  data.forEach(rep => {
-    reportBox.innerHTML += `From: ${rep.reportedUser} | Room: ${rep.room}\nReason: ${rep.reason}\nTime: ${rep.time}\n\n`;
-  });
+  viewReportsBtn.onclick = () => {
+    fetch('/admin/reports')
+      .then(res => res.json())
+      .then(data => {
+        alert('Reports:\n' + data.reports.join('\n\n'));
+      });
+  };
 });
