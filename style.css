@@ -1,0 +1,39 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0; padding: 0;
+  background-color: #0d0d0d;
+  color: #00ffcc;
+  text-align: center;
+}
+.dark-mode {
+  background-color: #ffffff;
+  color: #000000;
+}
+.toggle-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+#login-box, #chat-box {
+  max-width: 600px;
+  margin: 60px auto;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 10px;
+}
+input, button {
+  padding: 10px;
+  margin: 8px;
+  width: 80%;
+  border-radius: 6px;
+  border: none;
+}
+#messages {
+  height: 250px;
+  overflow-y: auto;
+  border: 1px solid #444;
+  margin: 10px 0;
+  padding: 10px;
+  background: #111;
+  text-align: left;
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShadowTalk</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="toggle-container">
+    <button id="toggleMode">🌙</button>
+  </div>
+  <div id="login-box">
+    <h1>ShadowTalk 2050</h1>
+    <input type="text" id="nickname" placeholder="Enter your nickname" />
+    <input type="text" id="roomInput" placeholder="Room name (optional)" />
+    <label><input type="checkbox" id="isPublic" /> Make Room Public</label>
+    <input type="password" id="roomPassword" placeholder="Password (optional)" />
+    <button onclick="enterChat()">Join Chat</button>
+  </div>
+
+  <div id="chat-box" style="display:none;">
+    <h2 id="room-title">Room:</h2>
+    <div id="user-list"></div>
+    <div id="messages"></div>
+    <div id="typing-indicator"></div>
+    <input type="text" id="messageInput" placeholder="Type a message..." oninput="sendTyping()" />
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="toggleVoice()">🎤</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

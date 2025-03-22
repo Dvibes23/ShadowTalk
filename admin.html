@@ -1,0 +1,30 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Panel - ShadowTalk</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Admin Login</h1>
+  <div id="login-box">
+    <input type="password" id="adminPass" placeholder="Enter admin password" />
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+    <h2>Active Rooms</h2>
+    <ul id="roomList"></ul>
+    <h2>Users in Room: <span id="currentRoom"></span></h2>
+    <ul id="userList"></ul>
+    <input type="text" id="targetUser" placeholder="User to kick" />
+    <button onclick="kickUser()">Kick</button>
+    <button onclick="loadLogs()">View Logs</button>
+    <pre id="logs"></pre>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
