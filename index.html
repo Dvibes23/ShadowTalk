@@ -1,38 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ShadowTalk 2050</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="mode-toggle">
-    <label>
-      <input type="checkbox" id="toggleMode"> Dark Mode
-    </label>
-  </div>
+  <div class="container">
+    <div id="auth" class="centered">
+      <h1>ShadowTalk 2050</h1>
+      <input type="text" id="nickname" placeholder="Your nickname" />
+      <input type="text" id="room" placeholder="Room name or leave blank" />
+      <label>
+        <input type="checkbox" id="publicRoom" />
+        Make Room Public
+      </label>
+      <input type="password" id="roomPassword" placeholder="Password (optional)" />
+      <button onclick="enterChat()">Enter Chat</button>
+    </div>
 
-  <div id="entry">
-    <h1>ShadowTalk 2050</h1>
-    <input type="text" id="nickname" placeholder="Your nickname">
-    <input type="text" id="room" placeholder="Room name or leave blank for random">
-    <label><input type="checkbox" id="publicRoom"> Make Room Public</label>
-    <input type="password" id="roomPassword" placeholder="Password (optional)">
-    <button onclick="enterChat()">Enter Chat</button>
-    <br><br>
-    <a href="admin.html" target="_blank">Admin Panel</a>
-  </div>
+    <div id="chatRoom" class="hidden">
+      <div id="roomInfo">
+        <h2 id="roomName">Room: </h2>
+        <h4 id="usersList">Users: </h4>
+        <label class="switch">
+          <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" />
+          <span class="slider"></span>
+        </label>
+        <span id="darkLabel">Dark Mode</span>
+      </div>
 
-  <div id="chat" class="hidden">
-    <h2 id="roomName"></h2>
-    <p id="usersInRoom"></p>
-    <div id="messages"></div>
-    <p id="typing"></p>
-    
-    <div id="inputSection">
-      <input type="text" id="messageInput" placeholder="Type your message...">
-      <button onclick="sendMessage()">Send</button>
-      <button id="recordBtn">🎤</button>
+      <div id="chatBox"></div>
+
+      <div class="inputArea">
+        <input type="text" id="messageInput" placeholder="Type your message..." />
+        <button onclick="sendMessage()">Send</button>
+        <button id="recordBtn" onclick="toggleRecording()">🎤</button>
+      </div>
+
+      <div id="typingStatus"></div>
+      <div id="recordingNotice" class="hidden"><em>Recording started...</em></div>
+
+      <button id="reportBtn" onclick="openReportModal()">Report</button>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Report a user or message</h3>
+        <input type="text" id="reportTarget" placeholder="Username or issue..." />
+        <button onclick="submitReport()">Submit Report</button>
+        <button onclick="closeReportModal()">Cancel</button>
+      </div>
     </div>
   </div>
 
