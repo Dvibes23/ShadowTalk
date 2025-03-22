@@ -1,101 +1,121 @@
 const express = require('express');
-const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const http = require('http');
 const path = require('path');
+const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
 const rooms = {};
-const publicRooms = new Set();
-const logs = {};
+const logs = [];
 const reports = [];
+const kickedUsers = {};
 
 app.use(express.static(__dirname));
-app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
-app.get('/admin', (req, res) => res.sendFile(__dirname + '/admin.html'));
 
-io.on('connection', socket => {
-  socket.on('join', ({ nickname, room, isPublic, password }) => {
-    if (!rooms[room]) rooms[room] = { users: {}, public: isPublic, password: password || '' };
-    if (rooms[room].password && rooms[room].password !== password) {
-      socket.emit('message', '<em>Incorrect room password!</em>');
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+
+let adminPassword = 'AdUnNi';
+
+io.on('connection', (socket) => {
+  socket.on('joinRoom', ({ username, room, password }) => {
+    if (kickedUsers[room]?.includes(username)) {
+      socket.emit('message', `You were kicked from this room.`);
       return;
     }
 
-    socket.join(room);
-    socket.room = room;
-    socket.nickname = nickname;
-    rooms[room].users[socket.id] = nickname;
-    if (isPublic) publicRooms.add(room);
-
-    io.to(room).emit('message', `Welcome ${nickname}!`);
-    io.to(room).emit('users', Object.values(rooms[room].users));
-    saveLog(room, `${nickname} joined.`)
-  });
-
-  socket.on('message', ({ message, room, nickname }) => {
-    const formatted = `${nickname}: ${message}`;
-    io.to(room).emit('message', formatted);
-    saveLog(room, formatted);
-  });
-
-  socket.on('voice', ({ blob, sender, room }) => {
-    io.to(room).emit('voice', { blob, sender });
-    saveLog(room, `${sender} sent a voice note`);
-  });
-
-  socket.on('typing', ({ nickname, room }) => {
-    socket.to(room).emit('typing', nickname);
-  });
-
-  socket.on('report', ({ reportedUser, reason, room }) => {
-    reports.push({ reportedUser, reason, room, time: new Date().toISOString() });
-  });
-
-  socket.on('kick', ({ target, room }) => {
-    const targetId = Object.keys(rooms[room].users).find(id => rooms[room].users[id] === target);
-    if (targetId) {
-      io.to(targetId).emit('message', 'You have been kicked by the admin.');
-      io.sockets.sockets.get(targetId).disconnect();
+    if (!rooms[room]) {
+      rooms[room] = { users: [], isPublic: true, password };
     }
+
+    if (rooms[room].password && rooms[room].password !== password) {
+      socket.emit('message', 'Incorrect room password.');
+      return;
+    }
+
+    socket.username = username;
+    socket.room = room;
+    socket.join(room);
+
+    rooms[room].users.push(username);
+
+    io.to(room).emit('message', `Welcome ${username}!`);
+    io.to(room).emit('message', `Users: ${rooms[room].users.join(', ')}`);
   });
 
-  socket.on('mute', ({ target, room }) => {
-    const targetId = Object.keys(rooms[room].users).find(id => rooms[room].users[id] === target);
-    if (targetId) io.to(targetId).emit('message', 'You have been muted by the admin.');
+  socket.on('chatMessage', (msg) => {
+    const room = socket.room;
+    const fullMsg = `${socket.username}: ${msg}`;
+    logs.push({ room, msg: fullMsg });
+    io.to(room).emit('message', fullMsg);
   });
 
-  socket.on('getRooms', () => {
-    socket.emit('roomList', Array.from(publicRooms));
+  socket.on('typing', () => {
+    socket.to(socket.room).emit('displayTyping', socket.username);
   });
 
-  socket.on('getUsers', room => {
-    const userList = rooms[room] ? Object.values(rooms[room].users) : [];
-    socket.emit('userList', { room, users: userList });
-  });
-
-  socket.on('getLogs', room => {
-    socket.emit('logs', logs[room] || []);
-  });
-
-  socket.on('getReports', () => {
-    socket.emit('reports', reports);
+  socket.on('voiceMessage', (data) => {
+    const audio = {
+      sender: socket.username,
+      audioData: data
+    };
+    io.to(socket.room).emit('voiceNote', audio);
   });
 
   socket.on('disconnect', () => {
     const room = socket.room;
     if (room && rooms[room]) {
-      const nickname = rooms[room].users[socket.id];
-      delete rooms[room].users[socket.id];
-      io.to(room).emit('message', `${nickname} left the room.`);
-      io.to(room).emit('users', Object.values(rooms[room].users));
-      saveLog(room, `${nickname} left.`);
+      rooms[room].users = rooms[room].users.filter(u => u !== socket.username);
+      io.to(room).emit('message', `${socket.username} left the room.`);
     }
+  });
+
+  // Admin Panel Events
+  socket.on('adminLogin', (password, cb) => {
+    cb(password === adminPassword);
+  });
+
+  socket.on('getRooms', (cb) => {
+    cb(Object.keys(rooms));
+  });
+
+  socket.on('getRoomUsers', (room, cb) => {
+    cb(rooms[room]?.users || []);
+  });
+
+  socket.on('kickUser', ({ room, user }) => {
+    kickedUsers[room] = kickedUsers[room] || [];
+    kickedUsers[room].push(user);
+    logs.push({ room, msg: `${user} was kicked by admin.` });
+    io.to(room).emit('message', `${user} was kicked by admin.`);
+    io.sockets.sockets.forEach(s => {
+      if (s.username === user && s.room === room) {
+        s.leave(room);
+        s.emit('message', 'You have been kicked from the room.');
+      }
+    });
+  });
+
+  socket.on('muteUser', ({ room, user }) => {
+    logs.push({ room, msg: `${user} was muted by admin.` });
+    io.to(room).emit('message', `${user} was muted by admin.`);
+  });
+
+  socket.on('getLogs', (room, cb) => {
+    cb(logs.filter(l => l.room === room));
+  });
+
+  // Reports
+  socket.on('reportUser', ({ username, room, reason }) => {
+    reports.push({ username, room, reason, time: new Date() });
+  });
+
+  socket.on('getReports', (cb) => {
+    cb(reports);
   });
 });
 
-function saveLog(room, msg) {
-  if (!logs[room]) logs[room] = [];
-  logs[room].push(`[${new Date().toLocaleTimeString()}] ${msg}`);
-}
-
-http.listen(3000, () => console.log('ShadowTalk server running on http://localhost:3000'));
+server.listen(3000, () => {
+  console.log('Phase 3 backend integration complete.');
+});
