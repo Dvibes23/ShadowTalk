@@ -1,57 +1,81 @@
 
 const socket = io();
-let selectedRoom = "";
+let isAuthenticated = false;
 
-function login() {
-  const pass = document.getElementById("adminPass").value;
-  socket.emit("admin-login", pass, (success) => {
-    if (success) {
-      document.getElementById("login-box").style.display = "none";
-      document.getElementById("adminPanel").style.display = "block";
-      socket.emit("admin-rooms");
-    } else {
-      alert("Incorrect password");
-    }
-  });
+function verify() {
+  const pass = document.getElementById('adminPass').value;
+  if (pass === "AdUnNi") {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("adminPanel").classList.remove("hidden");
+    isAuthenticated = true;
+  } else {
+    alert("Incorrect admin password.");
+  }
 }
 
-socket.on("admin-rooms", (rooms) => {
-  const roomList = document.getElementById("roomList");
-  roomList.innerHTML = "";
+function getRooms() {
+  if (!isAuthenticated) return;
+  socket.emit('getRooms');
+}
+
+socket.on('roomList', (rooms) => {
+  const list = document.getElementById("roomList");
+  list.innerHTML = '';
   rooms.forEach(room => {
     const li = document.createElement("li");
     li.textContent = room;
-    li.onclick = () => {
-      selectedRoom = room;
-      document.getElementById("currentRoom").textContent = room;
-      socket.emit("admin-users", room);
-    };
-    roomList.appendChild(li);
-  });
-});
-
-socket.on("admin-users", (users) => {
-  const list = document.getElementById("userList");
-  list.innerHTML = "";
-  Object.values(users).forEach(user => {
-    const li = document.createElement("li");
-    li.textContent = user;
     list.appendChild(li);
   });
 });
 
-function kickUser() {
-  const target = document.getElementById("targetUser").value;
-  if (selectedRoom && target) {
-    socket.emit("admin-kick", { room: selectedRoom, target });
-    alert("Kick signal sent");
-  }
+function getUsers() {
+  const room = document.getElementById('roomToCheck').value;
+  if (!room) return alert("Enter a room name.");
+  socket.emit("getUsers", room);
 }
 
-function loadLogs() {
-  socket.emit("admin-logs", selectedRoom);
+socket.on("userList", ({ room, users }) => {
+  const list = document.getElementById("userList");
+  list.innerHTML = '';
+  users.forEach(user => {
+    const li = document.createElement("li");
+    li.textContent = `${user} (in ${room})`;
+    list.appendChild(li);
+  });
+});
+
+function kick() {
+  const user = document.getElementById("userToKick").value;
+  const room = document.getElementById("roomTarget").value;
+  if (!user || !room) return alert("Enter both username and room name.");
+  socket.emit("kick", { target: user, room });
 }
 
-socket.on("admin-logs", (data) => {
-  document.getElementById("logs").textContent = data.join("\n");
+function mute() {
+  const user = document.getElementById("userToKick").value;
+  const room = document.getElementById("roomTarget").value;
+  if (!user || !room) return alert("Enter both username and room name.");
+  socket.emit("mute", { target: user, room });
+}
+
+function getLogs() {
+  const room = document.getElementById("logRoom").value;
+  if (!room) return alert("Enter a room name for logs.");
+  socket.emit("getLogs", room);
+}
+
+socket.on("logs", (data) => {
+  document.getElementById("logBox").textContent = data.join("\n");
+});
+
+function getReports() {
+  socket.emit("getReports");
+}
+
+socket.on("reports", (data) => {
+  const reportBox = document.getElementById("reportBox");
+  reportBox.innerHTML = "";
+  data.forEach(rep => {
+    reportBox.innerHTML += `From: ${rep.reportedUser} | Room: ${rep.room}\nReason: ${rep.reason}\nTime: ${rep.time}\n\n`;
+  });
 });
