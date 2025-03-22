@@ -1,32 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ShadowTalk</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>ShadowTalk 2050</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="toggle-container">
-    <button id="toggleMode">🌙</button>
-  </div>
-  <div id="login-box">
-    <h1>ShadowTalk 2050</h1>
-    <input type="text" id="nickname" placeholder="Enter your nickname" />
-    <input type="text" id="roomInput" placeholder="Room name (optional)" />
-    <label><input type="checkbox" id="isPublic" /> Make Room Public</label>
-    <input type="password" id="roomPassword" placeholder="Password (optional)" />
-    <button onclick="enterChat()">Join Chat</button>
+  <div id="mode-toggle">
+    <label>
+      <input type="checkbox" id="toggleMode"> Dark Mode
+    </label>
   </div>
 
-  <div id="chat-box" style="display:none;">
-    <h2 id="room-title">Room:</h2>
-    <div id="user-list"></div>
+  <div id="entry">
+    <h1>ShadowTalk 2050</h1>
+    <input type="text" id="nickname" placeholder="Your nickname">
+    <input type="text" id="room" placeholder="Room name or leave blank for random">
+    <label><input type="checkbox" id="publicRoom"> Make Room Public</label>
+    <input type="password" id="roomPassword" placeholder="Password (optional)">
+    <button onclick="enterChat()">Enter Chat</button>
+    <br><br>
+    <a href="admin.html" target="_blank">Admin Panel</a>
+  </div>
+
+  <div id="chat" class="hidden">
+    <h2 id="roomName"></h2>
+    <p id="usersInRoom"></p>
     <div id="messages"></div>
-    <div id="typing-indicator"></div>
-    <input type="text" id="messageInput" placeholder="Type a message..." oninput="sendTyping()" />
-    <button onclick="sendMessage()">Send</button>
-    <button onclick="toggleVoice()">🎤</button>
+    <p id="typing"></p>
+    
+    <div id="inputSection">
+      <input type="text" id="messageInput" placeholder="Type your message...">
+      <button onclick="sendMessage()">Send</button>
+      <button id="recordBtn">🎤</button>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
