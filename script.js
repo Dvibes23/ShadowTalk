@@ -115,11 +115,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // SOCKET EVENTS
 socket.on('message', msg => {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'message-wrapper';
+
   const p = document.createElement('p');
   p.innerHTML = msg;
-  chatBox.appendChild(p);
+  wrapper.appendChild(p);
+
+  const reactions = document.createElement('div');
+  reactions.className = 'reactions';
+  ['❤️', '😂', '👍', '👎'].forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'reaction-btn';
+    btn.textContent = emoji;
+    btn.onclick = () => {
+      showToast(`You reacted with ${emoji}`, 'info');
+    };
+    reactions.appendChild(btn);
+  });
+
+  wrapper.appendChild(reactions);
+  chatBox.appendChild(wrapper);
   chatBox.scrollTop = chatBox.scrollHeight;
-  playSound();
 });
 
 socket.on('displayTyping', user => {
