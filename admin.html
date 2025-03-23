@@ -3,43 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Panel - ShadowTalk</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
     <h2>Admin Panel - ShadowTalk</h2>
 
-    <!-- Admin Password Auth -->
+    <!-- Admin Password Authentication -->
     <div id="auth">
       <input type="password" id="adminPass" placeholder="Enter Admin Password">
       <button onclick="verify()">Login</button>
     </div>
 
-    <!-- Admin Dashboard -->
+    <!-- Main Admin Panel -->
     <div id="adminPanel" class="hidden">
-      <h3>Room Management</h3>
-      <button onclick="getRooms()">Show All Active Rooms</button>
-      <ul id="roomList"></ul>
+      <section>
+        <h3>Room Management</h3>
+        <button onclick="getRooms()">Show All Active Rooms</button>
+        <ul id="roomList"></ul>
+      </section>
 
-      <h4>View Users in Room</h4>
-      <input type="text" id="roomToCheck" placeholder="Enter room name">
-      <button onclick="getUsers()">Get Users</button>
-      <ul id="userList"></ul>
+      <section>
+        <h4>View Users in Room</h4>
+        <input type="text" id="roomToCheck" placeholder="Enter room name">
+        <button onclick="getUsers()">Get Users</button>
+        <ul id="userList"></ul>
+      </section>
 
-      <h4>Kick or Mute User</h4>
-      <input type="text" id="userToKick" placeholder="Username to kick/mute">
-      <input type="text" id="roomTarget" placeholder="Room name">
-      <button onclick="kick()">Kick</button>
-      <button onclick="mute()">Mute</button>
+      <section>
+        <h4>Kick or Mute User</h4>
+        <input type="text" id="userToKick" placeholder="Username to kick/mute">
+        <input type="text" id="roomTarget" placeholder="Room name">
+        <button onclick="kick()">Kick</button>
+        <button onclick="mute()">Mute</button>
+      </section>
 
-      <h3>View Logs</h3>
-      <input type="text" id="logRoom" placeholder="Room for logs">
-      <button onclick="getLogs()">View Logs</button>
-      <pre id="logBox"></pre>
+      <section>
+        <h3>View Logs</h3>
+        <input type="text" id="logRoom" placeholder="Room for logs">
+        <button onclick="getLogs()">View Logs</button>
+        <pre id="logBox"></pre>
+      </section>
 
-      <h3>Reports</h3>
-      <button onclick="getReports()">View Reports</button>
-      <pre id="reportBox"></pre>
+      <section>
+        <h3>Reports</h3>
+        <button onclick="getReports()">View Reports</button>
+        <pre id="reportBox"></pre>
+      </section>
     </div>
   </div>
 
