@@ -104,19 +104,45 @@ toggle?.addEventListener('change', () => {
   document.body.style.color = toggle.checked ? '#000' : '#0f0';
 });
 
-// Report system
-reportBtn?.addEventListener('click', () => {
-  reportModal.classList.remove('hidden');
-});
+// REPORT FUNCTIONALITY
+function showReportPrompt() {
+  const reportModal = document.createElement("div");
+  reportModal.id = "reportModal";
+  reportModal.innerHTML = `
+    <div class="report-content">
+      <h3>Report a user or message</h3>
+      <input type="text" id="reportInput" placeholder="Username or issue..." />
+      <button onclick="submitReport()">Submit Report</button>
+      <button onclick="cancelReport()">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(reportModal);
+}
 
-closeReport?.addEventListener('click', () => {
-  reportModal.classList.add('hidden');
-});
+// Submit report
+function submitReport() {
+  const input = document.getElementById("reportInput").value.trim();
+  if (!input) return alert("Please enter a report detail.");
 
-reportForm?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const reason = document.getElementById('reportReason').value;
-  socket.emit('reportUser', { username, room, reason });
-  reportModal.classList.add('hidden');
-  alert('Report submitted.');
-});
+  fetch("/report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ report: input }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      alert("Report submitted successfully.");
+      cancelReport();
+    })
+    .catch(() => {
+      alert("Error sending report.");
+    });
+}
+
+// Cancel report
+function cancelReport() {
+  const reportModal = document.getElementById("reportModal");
+  if (reportModal) {
+    reportModal.remove();
+  }
+}
