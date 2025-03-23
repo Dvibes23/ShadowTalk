@@ -145,6 +145,20 @@ socket.on('kicked', () => {
   window.location.reload();
 });
 
+// Emoji Picker
+const emojiBtn = document.getElementById('emojiBtn');
+const picker = new EmojiButton({
+  theme: localStorage.getItem('darkMode') === 'true' ? 'dark' : 'light'
+});
+
+picker.on('emoji', emoji => {
+  messageInput.value += emoji;
+});
+
+emojiBtn.addEventListener('click', () => {
+  picker.togglePicker(emojiBtn);
+});
+
 // REPORT
 function openReportModal() {
   reportModal.classList.remove('hidden');
