@@ -481,3 +481,206 @@ body.dark #chatBox {
   background: transparent;
   cursor: pointer;
 }
+/* Core layout */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #fff;
+  color: #000;
+  transition: background 0.3s, color 0.3s;
+}
+
+body.dark {
+  background: #111;
+  color: #fff;
+}
+
+/* Chat wrapper */
+#chatBox {
+  padding: 10px;
+  height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Message styles */
+.msg, .my-msg {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: 16px;
+  max-width: 70%;
+  position: relative;
+  word-wrap: break-word;
+  font-size: 15px;
+}
+
+.msg {
+  background: #e0e0e0;
+  align-self: flex-start;
+  color: #000;
+}
+
+.my-msg {
+  background: #dcf8c6;
+  align-self: flex-end;
+  color: #000;
+  box-shadow: 0 0 12px rgba(0, 255, 0, 0.4);
+}
+
+body.dark .msg {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+body.dark .my-msg {
+  background: #1e5128;
+  color: #fff;
+}
+
+/* Reaction bar (appears on tap/click) */
+.reaction-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 2px;
+  justify-content: center;
+  background: rgba(0,0,0,0.05);
+  border-radius: 12px;
+}
+
+.reaction-bar button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.reaction-bar button:hover {
+  transform: scale(1.2);
+}
+
+/* Reactions shown under message */
+.msg-reaction {
+  font-size: 14px;
+  margin-top: 4px;
+  padding-left: 6px;
+  color: #666;
+}
+
+/* Input & Button */
+input, button {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 10px;
+  margin-top: 6px;
+  border-radius: 6px;
+  border: none;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+body.dark button {
+  background: #0f0;
+  color: #000;
+}
+
+input {
+  background: #f2f2f2;
+  color: #000;
+}
+
+body.dark input {
+  background: #333;
+  color: #fff;
+}
+
+/* Mode toggle */
+.global-toggle {
+  position: fixed;
+  top: 10px;
+  right: 15px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+
+/* Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 45px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0;
+  right: 0; bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #0f0;
+}
+
+input:checked + .slider:before {
+  transform: translateX(21px);
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: #111;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 999;
+  animation: fadeIn 0.3s ease, fadeOut 0.5s ease 3.5s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateY(20px); }
+}
