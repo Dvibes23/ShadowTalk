@@ -1,54 +1,57 @@
 const socket = io();
-const messageInput = document.getElementById('messageInput');
-const chatBox = document.getElementById('chatBox');
-const sendButton = document.getElementById('sendButton');
-const micButton = document.getElementById('micButton');
-const recordingNotice = document.getElementById('recordingNotice');
-const typingStatus = document.getElementById('typingStatus');
-const toggle = document.getElementById('modeToggle');
-const reportBtn = document.getElementById('reportBtn');
-const reportModal = document.getElementById('reportModal');
-const reportForm = document.getElementById('reportForm');
-const closeReport = document.getElementById('closeReport');
 
 let isRecording = false;
 let mediaRecorder;
 let chunks = [];
 let username = '';
 let room = '';
+let kickedUsers = {};
 
-// Join room
-document.getElementById('joinForm')?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  username = document.getElementById('username').value;
-  room = document.getElementById('room').value;
-  const password = document.getElementById('roomPass').value;
+const nicknameInput = document.getElementById('nickname');
+const roomInput = document.getElementById('room');
+const passwordInput = document.getElementById('roomPassword');
+const chatBox = document.getElementById('chatBox');
+const messageInput = document.getElementById('messageInput');
+const typingStatus = document.getElementById('typingStatus');
+const recordBtn = document.getElementById('recordBtn');
+const recordingNotice = document.getElementById('recordingNotice');
+const darkToggle = document.getElementById('darkToggle');
+const reportModal = document.getElementById('reportModal');
 
-  socket.emit('joinRoom', { username, room, password });
-  document.getElementById('loginArea').classList.add('hidden');
-  document.getElementById('chatArea').classList.remove('hidden');
+// Enter chat
+function enterChat() {
+  username = nicknameInput.value.trim();
+  room = roomInput.value.trim() || `room-${Math.floor(Math.random() * 1000)}`;
+  const password = passwordInput.value.trim();
+  const isPublic = document.getElementById('publicRoom').checked;
+
+  if (!username) return alert("Please enter a nickname");
+
+  socket.emit('joinRoom', { username, room, password, isPublic });
+  document.getElementById('auth').classList.add('hidden');
+  document.getElementById('chatRoom').classList.remove('hidden');
   document.getElementById('roomName').textContent = `Room: ${room}`;
-});
+}
 
-// Send message
-sendButton?.addEventListener('click', () => {
+// Send text message
+function sendMessage() {
   const msg = messageInput.value.trim();
   if (msg) {
     socket.emit('chatMessage', msg);
     messageInput.value = '';
   }
-});
+}
 
-// Typing indicator
-messageInput?.addEventListener('input', () => {
+// Show typing
+messageInput.addEventListener('input', () => {
   socket.emit('typing');
 });
 
-// Voice recording
-micButton?.addEventListener('click', async () => {
+// Start/Stop recording
+async function toggleRecording() {
   if (isRecording) {
     mediaRecorder.stop();
-    micButton.textContent = '🎤';
+    recordBtn.textContent = '🎤';
     recordingNotice.classList.add('hidden');
     isRecording = false;
   } else {
@@ -68,12 +71,23 @@ micButton?.addEventListener('click', async () => {
     };
 
     isRecording = true;
-    micButton.textContent = '■';
+    recordBtn.textContent = '■';
     recordingNotice.classList.remove('hidden');
   }
-});
+}
 
-// Receive message
+// Toggle dark/light mode
+function toggleDarkMode() {
+  document.body.classList.toggle('dark', darkToggle.checked);
+}
+window.onload = () => {
+  if (localStorage.getItem('darkMode') === 'true') {
+    darkToggle.checked = true;
+    document.body.classList.add('dark');
+  }
+};
+
+// Show incoming messages
 socket.on('message', (msg) => {
   const p = document.createElement('p');
   p.innerHTML = msg;
@@ -81,7 +95,7 @@ socket.on('message', (msg) => {
   chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-// Typing
+// Typing display
 socket.on('displayTyping', (user) => {
   typingStatus.textContent = `${user} is typing...`;
   setTimeout(() => {
@@ -89,7 +103,7 @@ socket.on('displayTyping', (user) => {
   }, 1500);
 });
 
-// Receive voice note
+// Voice message display
 socket.on('voiceNote', ({ sender, audioData }) => {
   const div = document.createElement('div');
   div.innerHTML = `<strong>${sender} sent a voice note:</strong><br>
@@ -98,51 +112,40 @@ socket.on('voiceNote', ({ sender, audioData }) => {
   chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-// Toggle theme
-toggle?.addEventListener('change', () => {
-  document.body.style.backgroundColor = toggle.checked ? '#fff' : '#000';
-  document.body.style.color = toggle.checked ? '#000' : '#0f0';
+// Show users in room
+socket.on('roomUsers', (users) => {
+  const userList = users.map(user => user.username).join(', ');
+  document.getElementById('usersList').textContent = `Users: ${userList}`;
 });
 
-// REPORT FUNCTIONALITY
-function showReportPrompt() {
-  const reportModal = document.createElement("div");
-  reportModal.id = "reportModal";
-  reportModal.innerHTML = `
-    <div class="report-content">
-      <h3>Report a user or message</h3>
-      <input type="text" id="reportInput" placeholder="Username or issue..." />
-      <button onclick="submitReport()">Submit Report</button>
-      <button onclick="cancelReport()">Cancel</button>
-    </div>
-  `;
-  document.body.appendChild(reportModal);
+// Handle kick
+socket.on('kicked', (room) => {
+  alert("You have been kicked from this room.");
+  window.location.reload();
+});
+
+// Report button
+function openReportModal() {
+  document.getElementById("reportModal").classList.remove("hidden");
+}
+
+function closeReportModal() {
+  document.getElementById("reportModal").classList.add("hidden");
 }
 
 // Submit report
 function submitReport() {
-  const input = document.getElementById("reportInput").value.trim();
-  if (!input) return alert("Please enter a report detail.");
+  const input = document.getElementById("reportTarget").value.trim();
+  if (!input) return alert("Please enter something to report.");
 
   fetch("/report", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ report: input }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      alert("Report submitted successfully.");
-      cancelReport();
-    })
-    .catch(() => {
-      alert("Error sending report.");
-    });
-}
-
-// Cancel report
-function cancelReport() {
-  const reportModal = document.getElementById("reportModal");
-  if (reportModal) {
-    reportModal.remove();
-  }
+    body: JSON.stringify({ report: input })
+  }).then(() => {
+    alert("Report submitted.");
+    closeReportModal();
+  }).catch(() => {
+    alert("Failed to send report.");
+  });
 }
