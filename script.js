@@ -20,7 +20,9 @@ const recordingNotice = document.getElementById('recordingNotice');
 const darkToggle = document.getElementById('darkToggle');
 const reportModal = document.getElementById('reportModal');
 
-// Join Chat
+const TOAST_DURATION = 4000;
+const ROOM_PREFIX = 'room-';
+
 function enterChat() {
   username = nicknameInput.value.trim();
   const password = passwordInput.value.trim();
@@ -31,27 +33,30 @@ function enterChat() {
 
   if (!inputRoom && isPublic) {
     socket.emit('findPublicRoom', (foundRoom) => {
-      room = foundRoom || `room-${Math.floor(Math.random() * 1000)}`;
-      joinFinal(room);
+      room = foundRoom || generateRandomRoomName();
+      joinRoom(room);
     });
   } else {
-    room = inputRoom || `room-${Math.floor(Math.random() * 1000)}`;
-    joinFinal(room);
-  }
-
-  function joinFinal(roomToJoin) {
-    room = roomToJoin;
-    roomInput.value = room;
-    socket.emit('joinRoom', { username, room, password, isPublic });
-
-    document.getElementById('auth').classList.add('hidden');
-    document.getElementById('chatRoom').classList.remove('hidden');
-    document.getElementById('roomName').textContent = `Room: ${room}`;
-    showToast(`Joined room: ${room}`, 'success');
+    room = inputRoom || generateRandomRoomName();
+    joinRoom(room);
   }
 }
 
-// Send Message
+function generateRandomRoomName() {
+  return `${ROOM_PREFIX}${Math.floor(Math.random() * 1000)}`;
+}
+
+function joinRoom(roomToJoin) {
+  room = roomToJoin;
+  roomInput.value = room;
+  socket.emit('joinRoom', { username, room, password, isPublic });
+
+  document.getElementById('auth').classList.add('hidden');
+  document.getElementById('chatRoom').classList.remove('hidden');
+  document.getElementById('roomName').textContent = `Room: ${room}`;
+  showToast(`Joined room: ${room}`, 'success');
+}
+
 function sendMessage() {
   const msg = messageInput.value.trim();
   if (msg) {
@@ -61,12 +66,10 @@ function sendMessage() {
   }
 }
 
-// Typing
 messageInput.addEventListener('input', () => {
   socket.emit('typing');
 });
 
-// Voice Recording
 async function toggleRecording() {
   if (isRecording) {
     mediaRecorder.stop();
@@ -76,19 +79,7 @@ async function toggleRecording() {
   } else {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      chunks = [];
-
-      mediaRecorder.ondataavailable = e => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          socket.emit('voiceMessage', { sender: username, audioData: reader.result });
-        };
-        reader.readAsDataURL(blob);
-      };
-
+      setupMediaRecorder(stream);
       mediaRecorder.start();
       isRecording = true;
       recordBtn.textContent = '■';
@@ -99,7 +90,21 @@ async function toggleRecording() {
   }
 }
 
-// Emoji Picker
+function setupMediaRecorder(stream) {
+  mediaRecorder = new MediaRecorder(stream);
+  chunks = [];
+
+  mediaRecorder.ondataavailable = e => chunks.push(e.data);
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(chunks, { type: 'audio/webm' });
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      socket.emit('voiceMessage', { sender: username, audioData: reader.result });
+    };
+    reader.readAsDataURL(blob);
+  };
+}
+
 const emojiBtn = document.getElementById('emojiBtn');
 const picker = new EmojiButton({
   theme: localStorage.getItem('darkMode') === 'true' ? 'dark' : 'light'
@@ -115,7 +120,6 @@ if (emojiBtn) {
   });
 }
 
-// Reaction Popup
 function createReactions(msgId) {
   const popup = document.createElement('div');
   popup.className = 'reaction-popup';
@@ -133,7 +137,6 @@ function createReactions(msgId) {
   return popup;
 }
 
-// Notification
 function notify(title, body) {
   if (Notification.permission === 'granted') {
     new Notification(title, { body });
@@ -144,14 +147,13 @@ function notify(title, body) {
   }
 }
 
-// Socket Events
 socket.on('message', data => {
   const wrapper = document.createElement('div');
   wrapper.className = data.username === username ? 'my-msg' : 'msg';
 
   const content = document.createElement('div');
   content.className = 'msg-content';
-  content.innerHTML = `<strong>${data.username}:</strong> ${data.text}`;
+  content.innerHTML = `<strong>${data.username}:</strong> ${sanitize(data.text)}`;
   content.onclick = () => {
     const popup = createReactions(data.id);
     wrapper.appendChild(popup);
@@ -183,14 +185,14 @@ socket.on('displayTyping', user => {
 
 socket.on('voiceNote', ({ sender, audioData }) => {
   const div = document.createElement('div');
-  div.innerHTML = `<strong>${sender} sent a voice note:</strong><br>
+  div.innerHTML = `<strong>${sanitize(sender)} sent a voice note:</strong><br>
     <audio controls src="${audioData}" style="width: 100%;"></audio>`;
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 });
 
 socket.on('roomUsers', (users) => {
-  const list = users.map(u => u.username).join(', ');
+  const list = users.map(u => sanitize(u.username)).join(', ');
   document.getElementById('usersList').textContent = `Users: ${list}`;
 });
 
@@ -199,7 +201,6 @@ socket.on('kicked', () => {
   window.location.reload();
 });
 
-// Dark Mode
 document.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem('darkMode') === 'true') {
     document.body.classList.add('dark');
@@ -215,13 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// REPORT
 function openReportModal() {
   reportModal.classList.remove('hidden');
 }
+
 function closeReportModal() {
   reportModal.classList.add('hidden');
 }
+
 function submitReport() {
   const input = document.getElementById("reportTarget").value.trim();
   if (!input) return alert("Please enter full details of your report to the support.");
@@ -239,17 +241,21 @@ function submitReport() {
   });
 }
 
-// TOAST
 function showToast(msg, type = 'info') {
   const toast = document.createElement('div');
   toast.className = 'toast ' + type;
   toast.innerText = msg;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
+  setTimeout(() => toast.remove(), TOAST_DURATION);
 }
 
-// SOUND
 function playSound() {
   const audio = new Audio('https://cdn.jsdelivr.net/gh/innocenttaylor/chat-sounds/soft-pop.mp3');
   audio.play();
 }
+
+function sanitize(str) {
+  const temp = document.createElement('div');
+  temp.textContent = str;
+  return temp.innerHTML;
+  }
