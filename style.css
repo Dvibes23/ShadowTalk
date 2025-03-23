@@ -390,6 +390,32 @@ body.dark #chatBox {
   transition: all 0.3s ease;
 }
 
-#emojiBtn:hover {
+.message-wrapper {
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.reactions {
+  margin-top: 5px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.reaction-btn {
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 5px;
+  padding: 2px 6px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.reaction-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.2);
 }
