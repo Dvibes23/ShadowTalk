@@ -15,15 +15,14 @@ const rooms = {};
 const logs = [];
 const reports = [];
 const kickedUsers = {};
-
 const adminPassword = 'AdUnNi';
 
-// Admin Panel Route
+// Admin panel route
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Handle Report from Users
+// Handle user reports
 app.post('/report', (req, res) => {
   const { report } = req.body;
   if (!report) return res.status(400).json({ error: 'Empty report' });
@@ -37,13 +36,20 @@ app.post('/report', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  // Join Room
+
   socket.on('joinRoom', ({ username, room, password, isPublic }) => {
+    // Handle random room join
+    if (!room || room.trim() === '') {
+      const available = Object.keys(rooms).find(r => rooms[r].isPublic && rooms[r].users.length > 0);
+      room = available || `room-${Math.floor(Math.random() * 1000)}`;
+    }
+
     if (kickedUsers[room]?.includes(username)) {
       socket.emit('kicked', room);
       return;
     }
 
+    // Create new room if not exists
     if (!rooms[room]) {
       rooms[room] = {
         users: [],
@@ -67,19 +73,16 @@ io.on('connection', (socket) => {
     io.to(room).emit('roomUsers', rooms[room].users);
   });
 
-  // Text Message
   socket.on('chatMessage', (msg) => {
     const fullMsg = `${socket.username}: ${msg}`;
     logs.push({ room: socket.room, msg: fullMsg });
     io.to(socket.room).emit('message', fullMsg);
   });
 
-  // Typing Notification
   socket.on('typing', () => {
     socket.to(socket.room).emit('displayTyping', socket.username);
   });
 
-  // Voice Message
   socket.on('voiceMessage', (data) => {
     io.to(socket.room).emit('voiceNote', {
       sender: socket.username,
@@ -87,7 +90,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Handle Disconnect
   socket.on('disconnect', () => {
     const room = socket.room;
     if (room && rooms[room]) {
@@ -102,25 +104,28 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ADMIN SOCKET EVENTS
-
-  // Admin Login
+  // Admin login
   socket.on('adminLogin', (password, cb) => {
     cb(password === adminPassword);
   });
 
-  // Get Active Rooms
+  // Get all active rooms
   socket.on('getRooms', (cb) => {
     cb(Object.keys(rooms));
   });
 
-  // Get Users in Room
+  // Get users in a room
   socket.on('getRoomUsers', (room, cb) => {
     cb(rooms[room]?.users.map(u => u.username) || []);
   });
 
-  // Kick User
+  // Kick a user
   socket.on('kickUser', ({ room, user }) => {
+    const roomUsers = rooms[room]?.users || [];
+    const exists = roomUsers.find(u => u.username === user);
+
+    if (!exists) return; // prevent kicking non-existent users
+
     kickedUsers[room] = kickedUsers[room] || [];
     if (!kickedUsers[room].includes(user)) {
       kickedUsers[room].push(user);
@@ -137,22 +142,25 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Mute User
+  // Mute a user
   socket.on('muteUser', ({ room, user }) => {
+    const exists = rooms[room]?.users.find(u => u.username === user);
+    if (!exists) return; // skip if user is not in the room
+
     logs.push({ room, msg: `${user} was muted by admin.` });
     io.to(room).emit('message', `${user} was muted by admin.`);
   });
 
-  // Get Logs for Room
+  // Get chat logs
   socket.on('getLogs', (room, cb) => {
     const roomLogs = logs.filter(log => log.room === room).map(l => l.msg);
     cb(roomLogs);
   });
 
-  // Get & Clear Reports
+  // Get and clear reports
   socket.on('getReports', (cb) => {
     cb([...reports]);
-    reports.length = 0; // Clear reports after viewing
+    reports.length = 0;
   });
 });
 
