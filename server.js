@@ -78,11 +78,18 @@ io.on('connection', (socket) => {
   });
 
   // Chat message
-  socket.on('chatMessage', (msg) => {
-    const fullMsg = `${socket.username}: ${msg}`;
-    logs.push({ room: socket.room, msg: fullMsg });
-    io.to(socket.room).emit('message', fullMsg);
-  });
+  let msgCounter = 1;
+
+socket.on('chatMessage', (msg) => {
+  const id = 'msg-' + (msgCounter++);
+  const fullMsg = {
+    id,
+    sender: socket.username,
+    text: msg
+  };
+  logs.push({ room: socket.room, msg: fullMsg });
+  io.to(socket.room).emit('message', fullMsg);
+});
 
   // Typing indicator
   socket.on('typing', () => {
