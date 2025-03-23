@@ -382,3 +382,14 @@ body.dark #chatBox {
   background-color: #eaeaea;
   color: #000;
 }
+#emojiBtn {
+  background-color: transparent;
+  border: 1px solid #555;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#emojiBtn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
