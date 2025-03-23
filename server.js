@@ -16,14 +16,12 @@ const logs = [];
 const reports = [];
 const kickedUsers = {};
 const adminPassword = 'AdUnNi';
-let msgCounter = 1;
 
-// Admin Panel Route
+// Admin panel
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Handle user reports
 app.post('/report', (req, res) => {
   const { report } = req.body;
   if (!report) return res.status(400).json({ error: 'Empty report' });
@@ -36,9 +34,10 @@ app.post('/report', (req, res) => {
   res.json({ success: true });
 });
 
-// Socket Handling
+let msgCounter = 1;
+
 io.on('connection', (socket) => {
-  // Find Public Room
+  // Find a random public room
   socket.on('findPublicRoom', (cb) => {
     const publicRoom = Object.entries(rooms).find(([name, info]) =>
       info.isPublic && info.users.length > 0
@@ -46,10 +45,10 @@ io.on('connection', (socket) => {
     cb(publicRoom ? publicRoom[0] : null);
   });
 
-  // Join Room
+  // Join room
   socket.on('joinRoom', ({ username, room, password, isPublic }) => {
     if (kickedUsers[room]?.includes(username)) {
-      socket.emit('kicked');
+      socket.emit('kicked', room);
       return;
     }
 
@@ -63,10 +62,9 @@ io.on('connection', (socket) => {
 
     if (rooms[room].password && rooms[room].password !== password) {
       socket.emit('message', {
-        id: 'sys-' + msgCounter++,
-        username: 'System',
+        id: 'sys-' + Date.now(),
+        sender: 'System',
         text: 'Incorrect room password.',
-        reaction: ''
       });
       return;
     }
@@ -78,37 +76,24 @@ io.on('connection', (socket) => {
     rooms[room].users.push({ username });
 
     const joinMsg = {
-      id: 'msg-' + msgCounter++,
-      username: 'System',
+      id: 'msg-' + (msgCounter++),
+      sender: 'System',
       text: `${username} joined the room.`,
-      reaction: ''
     };
-    logs.push({ room, msg: joinMsg });
 
     io.to(room).emit('message', joinMsg);
     io.to(room).emit('roomUsers', rooms[room].users);
   });
 
-  // Chat Message
+  // Chat message
   socket.on('chatMessage', (text) => {
-    const newMsg = {
-      id: 'msg-' + msgCounter++,
-      username: socket.username,
+    const message = {
+      id: 'msg-' + (msgCounter++),
+      sender: socket.username,
       text,
-      reaction: ''
     };
-    logs.push({ room: socket.room, msg: newMsg });
-    io.to(socket.room).emit('message', newMsg);
-  });
-
-  // Add Reaction
-  socket.on('addReaction', ({ msgId, emoji }) => {
-    const room = socket.room;
-    const msg = logs.find(log => log.room === room && log.msg.id === msgId);
-    if (msg) {
-      msg.msg.reaction = emoji;
-      io.to(room).emit('message', msg.msg);
-    }
+    logs.push({ room: socket.room, msg: message });
+    io.to(socket.room).emit('message', message);
   });
 
   // Typing
@@ -116,7 +101,7 @@ io.on('connection', (socket) => {
     socket.to(socket.room).emit('displayTyping', socket.username);
   });
 
-  // Voice Note
+  // Voice
   socket.on('voiceMessage', (data) => {
     io.to(socket.room).emit('voiceNote', {
       sender: socket.username,
@@ -124,21 +109,40 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Reaction to message
+  socket.on('addReaction', ({ msgId, emoji }) => {
+    io.to(socket.room).emit('messageReaction', {
+      msgId,
+      emoji,
+      reactor: socket.username
+    });
+  });
+
+  // Call initiation
+  socket.on('startCall', () => {
+    socket.to(socket.room).emit('incomingCall', socket.username);
+  });
+
+  // Call accept
+  socket.on('acceptCall', () => {
+    socket.to(socket.room).emit('callAccepted');
+  });
+
+  // End call
+  socket.on('endCall', () => {
+    io.to(socket.room).emit('callEnded');
+  });
+
   // Disconnect
   socket.on('disconnect', () => {
     const room = socket.room;
     if (room && rooms[room]) {
       rooms[room].users = rooms[room].users.filter(u => u.username !== socket.username);
-
-      const leaveMsg = {
-        id: 'msg-' + msgCounter++,
-        username: 'System',
-        text: `${socket.username} left the room.`,
-        reaction: ''
-      };
-      logs.push({ room, msg: leaveMsg });
-
-      io.to(room).emit('message', leaveMsg);
+      io.to(room).emit('message', {
+        id: 'msg-' + (msgCounter++),
+        sender: 'System',
+        text: `${socket.username} left the room.`
+      });
       io.to(room).emit('roomUsers', rooms[room].users);
 
       if (rooms[room].users.length === 0) {
@@ -148,31 +152,40 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Admin Functions
-  socket.on('adminLogin', (password, cb) => cb(password === adminPassword));
-  socket.on('getRooms', (cb) => cb(Object.keys(rooms)));
-  socket.on('getRoomUsers', (room, cb) => cb(rooms[room]?.users.map(u => u.username) || []));
+  // Admin tools
+  socket.on('adminLogin', (password, cb) => {
+    cb(password === adminPassword);
+  });
+
+  socket.on('getRooms', (cb) => {
+    cb(Object.keys(rooms));
+  });
+
+  socket.on('getRoomUsers', (room, cb) => {
+    cb((rooms[room]?.users || []).map(u => u.username));
+  });
+
   socket.on('kickUser', ({ room, user }) => {
-    const exists = rooms[room]?.users.find(u => u.username === user);
+    const users = rooms[room]?.users || [];
+    const exists = users.find(u => u.username === user);
     if (!exists) return;
 
     kickedUsers[room] = kickedUsers[room] || [];
-    if (!kickedUsers[room].includes(user)) kickedUsers[room].push(user);
+    if (!kickedUsers[room].includes(user)) {
+      kickedUsers[room].push(user);
+    }
 
-    const kickMsg = {
-      id: 'msg-' + msgCounter++,
-      username: 'System',
-      text: `${user} was kicked by the support.`,
-      reaction: ''
-    };
-    logs.push({ room, msg: kickMsg });
-
-    io.to(room).emit('message', kickMsg);
+    logs.push({ room, msg: `${user} was kicked by support.` });
+    io.to(room).emit('message', {
+      id: 'msg-' + (msgCounter++),
+      sender: 'System',
+      text: `${user} was kicked by the support.`
+    });
 
     for (let [id, s] of io.sockets.sockets) {
       if (s.username === user && s.room === room) {
         s.leave(room);
-        s.emit('kicked');
+        s.emit('kicked', room);
       }
     }
   });
@@ -181,19 +194,18 @@ io.on('connection', (socket) => {
     const exists = rooms[room]?.users.find(u => u.username === user);
     if (!exists) return;
 
-    const muteMsg = {
-      id: 'msg-' + msgCounter++,
-      username: 'System',
-      text: `${user} was muted by the support.`,
-      reaction: ''
-    };
-    logs.push({ room, msg: muteMsg });
-    io.to(room).emit('message', muteMsg);
+    logs.push({ room, msg: `${user} was muted.` });
+    io.to(room).emit('message', {
+      id: 'msg-' + (msgCounter++),
+      sender: 'System',
+      text: `${user} was muted by the support.`
+    });
   });
 
-  // Logs
   socket.on('getLogs', (room, cb) => {
-    const roomLogs = logs.filter(log => log.room === room).map(l => l.msg);
+    const roomLogs = logs
+      .filter(log => log.room === room)
+      .map(l => `${l.msg.sender}: ${l.msg.text}`);
     cb(roomLogs);
   });
 
@@ -203,7 +215,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start Server
+// Start server
 server.listen(3000, () => {
   console.log('ShadowTalk 2050 server is live on port 3000');
 });
