@@ -7,7 +7,10 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Global Dark Mode Toggle (always visible) -->
+  <!-- Particle Background -->
+  <div id="particles-js"></div>
+
+  <!-- Global Dark Mode Toggle -->
   <div class="global-toggle">
     <label class="switch">
       <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" />
@@ -16,30 +19,31 @@
     <span id="darkLabel">Dark Mode</span>
   </div>
 
-  <div class="container">
-    <!-- Join Page -->
-    <div id="auth" class="centered">
-      <h1>ShadowTalk 2050</h1>
+  <!-- Container -->
+  <div class="container animated fadeIn">
+    <!-- Join Screen -->
+    <div id="auth" class="centered glass-panel">
+      <h1 class="glow">ShadowTalk 2050</h1>
       <input type="text" id="nickname" placeholder="Your nickname" />
       <input type="text" id="room" placeholder="Room name or leave blank" />
 
-      <label>
+      <label class="glow-label">
         <input type="checkbox" id="privateRoom" />
-        <span style="color: lime;">Private Room</span>
+        Private Room
       </label>
 
       <input type="password" id="roomPassword" placeholder="Password (optional)" />
       <button onclick="enterChat()">Enter Chat</button>
     </div>
 
-    <!-- Chat Page -->
-    <div id="chatRoom" class="hidden">
+    <!-- Chat Room -->
+    <div id="chatRoom" class="hidden glass-panel animated fadeInUp">
       <div id="roomInfo">
         <h2 id="roomName">Room:</h2>
         <h4 id="usersList">Users:</h4>
       </div>
 
-      <div id="chatBox"></div>
+      <div id="chatBox" class="neon-box"></div>
 
       <div class="inputArea">
         <input type="text" id="messageInput" placeholder="Type your message..." />
@@ -55,7 +59,7 @@
 
     <!-- Report Modal -->
     <div id="reportModal" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content neon-border">
         <h3>Report a user or message</h3>
         <input type="text" id="reportTarget" placeholder="Username or issue..." />
         <button onclick="submitReport()">Submit Report</button>
@@ -64,8 +68,15 @@
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- External Scripts -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script>
+    // Load particles
+    particlesJS.load('particles-js', 'particles.json', () => {
+      console.log('particles.js config loaded');
+    });
+  </script>
 </body>
 </html>
