@@ -14,8 +14,8 @@
       <input type="text" id="nickname" placeholder="Your nickname" />
       <input type="text" id="room" placeholder="Room name or leave blank" />
       <label>
-        <input type="checkbox" id="publicRoom" />
-        Make Room Public
+        <input type="checkbox" id="privateRoom" />
+        Private Room
       </label>
       <input type="password" id="roomPassword" placeholder="Password (optional)" />
       <button onclick="enterChat()">Enter Chat</button>
@@ -28,11 +28,13 @@
         <h4 id="usersList">Users:</h4>
 
         <!-- Dark Mode Toggle -->
-        <label class="switch">
-          <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" />
-          <span class="slider round"></span>
-        </label>
-        <span id="darkLabel">Dark Mode</span>
+        <div class="modeToggle">
+          <label class="switch">
+            <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" />
+            <span class="slider round"></span>
+          </label>
+          <span id="darkLabel">Dark Mode</span>
+        </div>
       </div>
 
       <!-- Chat Display -->
