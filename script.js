@@ -138,7 +138,7 @@ socket.on('roomUsers', (users) => {
 });
 
 socket.on('kicked', (roomName) => {
-  alert("You were kicked by an admin and cannot rejoin this room.");
+  alert("You were kicked by the support and cannot rejoin this room.");
   window.location.reload();
 });
 
@@ -153,14 +153,14 @@ function closeReportModal() {
 
 function submitReport() {
   const input = document.getElementById("reportTarget").value.trim();
-  if (!input) return alert("Please enter something to report.");
+  if (!input) return alert("Please enter full details of your report to the support.");
 
   fetch("/report", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ report: input })
   }).then(() => {
-    alert("Report submitted successfully.");
+    alert("Report submitted successfully action will be taken on the report within few minutes.");
     document.getElementById("reportTarget").value = "";
     closeReportModal();
   }).catch(() => {
