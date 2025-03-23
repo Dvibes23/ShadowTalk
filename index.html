@@ -7,56 +7,54 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Global Dark Mode Toggle (always visible) -->
+  <div class="global-toggle">
+    <label class="switch">
+      <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" />
+      <span class="slider round"></span>
+    </label>
+    <span id="darkLabel">Dark Mode</span>
+  </div>
+
   <div class="container">
-    <!-- Authentication/Join Section -->
+    <!-- Join Page -->
     <div id="auth" class="centered">
       <h1>ShadowTalk 2050</h1>
       <input type="text" id="nickname" placeholder="Your nickname" />
       <input type="text" id="room" placeholder="Room name or leave blank" />
+
       <label>
         <input type="checkbox" id="privateRoom" />
-        Private Room
+        <span style="color: lime;">Private Room</span>
       </label>
+
       <input type="password" id="roomPassword" placeholder="Password (optional)" />
       <button onclick="enterChat()">Enter Chat</button>
     </div>
 
-    <!-- Chat Room -->
+    <!-- Chat Page -->
     <div id="chatRoom" class="hidden">
       <div id="roomInfo">
         <h2 id="roomName">Room:</h2>
         <h4 id="usersList">Users:</h4>
-
-        <!-- Dark Mode Toggle -->
-        <div class="modeToggle">
-          <label class="switch">
-            <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" />
-            <span class="slider round"></span>
-          </label>
-          <span id="darkLabel">Dark Mode</span>
-        </div>
       </div>
 
-      <!-- Chat Display -->
       <div id="chatBox"></div>
 
-      <!-- Input + Record -->
       <div class="inputArea">
         <input type="text" id="messageInput" placeholder="Type your message..." />
         <button onclick="sendMessage()">Send</button>
         <button id="recordBtn" onclick="toggleRecording()">🎤</button>
       </div>
 
-      <!-- Typing / Recording Indicator -->
       <div id="typingStatus"></div>
       <div id="recordingNotice" class="hidden"><em>Recording started...</em></div>
 
-      <!-- Report Button -->
       <button id="reportBtn" onclick="openReportModal()">Report</button>
     </div>
 
     <!-- Report Modal -->
-    <div id="reportModal" class="modal hidden" role="dialog" aria-hidden="true">
+    <div id="reportModal" class="modal hidden">
       <div class="modal-content">
         <h3>Report a user or message</h3>
         <input type="text" id="reportTarget" placeholder="Username or issue..." />
