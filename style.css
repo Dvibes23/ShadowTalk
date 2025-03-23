@@ -75,11 +75,12 @@ button:hover {
 .inputArea {
   display: flex;
   gap: 10px;
-  flex-wrap: nowrap;
+  margin-top: 10px;
 }
 
 .inputArea input {
   flex: 1;
+  min-width: 0;
 }
 
 #recordingNotice {
@@ -91,6 +92,16 @@ button:hover {
 #roomInfo {
   margin-bottom: 10px;
   text-align: center;
+  position: relative;
+}
+
+/* Dark Mode Toggle Positioning */
+.modeToggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  gap: 5px;
 }
 
 #reportBtn {
@@ -124,6 +135,12 @@ button:hover {
 
 .modal-content input {
   margin-bottom: 15px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #111;
+  color: #0f0;
+  border: 1px solid #0f0;
 }
 
 .switch {
@@ -172,6 +189,17 @@ input:checked + .slider:before {
 
 #darkLabel {
   font-size: 14px;
+}
+
+/* Responsive Fixes */
+@media (max-width: 480px) {
+  .inputArea {
+    flex-direction: column;
+  }
+
+  button {
+    font-size: 14px;
+  }
 }
 
 /* Dark mode styles */
