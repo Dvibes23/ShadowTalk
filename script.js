@@ -9,7 +9,7 @@ let room = '';
 const nicknameInput = document.getElementById('nickname');
 const roomInput = document.getElementById('room');
 const passwordInput = document.getElementById('roomPassword');
-const privateRoomCheckbox = document.getElementById('privateRoom'); // fixed ID
+const privateRoomCheckbox = document.getElementById('privateRoom');
 const chatBox = document.getElementById('chatBox');
 const messageInput = document.getElementById('messageInput');
 const typingStatus = document.getElementById('typingStatus');
@@ -18,22 +18,23 @@ const recordingNotice = document.getElementById('recordingNotice');
 const darkToggle = document.getElementById('darkToggle');
 const reportModal = document.getElementById('reportModal');
 
-// Enter chat room
+// JOIN CHAT ROOM
 function enterChat() {
   username = nicknameInput.value.trim();
-  room = roomInput.value.trim() || `room-${Math.floor(Math.random() * 1000)}`;
+  room = roomInput.value.trim(); // can be blank
   const password = passwordInput.value.trim();
-  const isPublic = !privateRoomCheckbox.checked; // correct logic
+  const isPublic = !privateRoomCheckbox.checked;
 
   if (!username) return alert("Please enter a nickname");
 
   socket.emit('joinRoom', { username, room, password, isPublic });
+
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('chatRoom').classList.remove('hidden');
-  document.getElementById('roomName').textContent = `Room: ${room}`;
+  document.getElementById('roomName').textContent = `Room: ${room || "Auto-selected"}`;
 }
 
-// Send message
+// SEND MESSAGE
 function sendMessage() {
   const msg = messageInput.value.trim();
   if (msg) {
@@ -42,12 +43,12 @@ function sendMessage() {
   }
 }
 
-// Typing
+// TYPING INDICATOR
 messageInput.addEventListener('input', () => {
   socket.emit('typing');
 });
 
-// Voice recording
+// VOICE RECORDING
 async function toggleRecording() {
   if (isRecording) {
     mediaRecorder.stop();
@@ -80,22 +81,22 @@ async function toggleRecording() {
   }
 }
 
-// Dark mode
+// DARK MODE
 function toggleDarkMode() {
-  const isDark = darkToggle.checked;
+  const isDark = darkToggle?.checked;
   document.body.classList.toggle('dark', isDark);
   localStorage.setItem('darkMode', isDark);
 }
 
 window.onload = () => {
-  const saved = localStorage.getItem('darkMode') === 'true';
-  if (saved && darkToggle) {
-    darkToggle.checked = true;
+  const darkSaved = localStorage.getItem('darkMode') === 'true';
+  if (darkSaved) {
     document.body.classList.add('dark');
+    if (darkToggle) darkToggle.checked = true;
   }
 };
 
-// Socket listeners
+// MESSAGES
 socket.on('message', msg => {
   const p = document.createElement('p');
   p.innerHTML = msg;
@@ -105,7 +106,9 @@ socket.on('message', msg => {
 
 socket.on('displayTyping', user => {
   typingStatus.textContent = `${user} is typing...`;
-  setTimeout(() => { typingStatus.textContent = ''; }, 1500);
+  setTimeout(() => {
+    typingStatus.textContent = '';
+  }, 1500);
 });
 
 socket.on('voiceNote', ({ sender, audioData }) => {
@@ -126,7 +129,7 @@ socket.on('kicked', (roomName) => {
   window.location.reload();
 });
 
-// Report modal
+// REPORT
 function openReportModal() {
   reportModal.classList.remove('hidden');
 }
