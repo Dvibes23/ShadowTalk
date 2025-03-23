@@ -233,3 +233,27 @@ body.dark #chatBox {
   align-items: center;
   z-index: 999;
 }
+/* Dark Mode Styles */
+body.dark {
+  background-color: #000;
+  color: #0f0;
+}
+
+body.dark input,
+body.dark input[type="text"],
+body.dark input[type="password"],
+body.dark textarea {
+  background-color: #111;
+  color: #0f0;
+  border-color: #0f0;
+}
+
+body.dark button {
+  background-color: #0f0;
+  color: #000;
+}
+
+body.dark #chatBox {
+  background-color: #111;
+  color: #0f0;
+    }
