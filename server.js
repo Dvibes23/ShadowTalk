@@ -17,12 +17,15 @@ const reports = [];
 const kickedUsers = {};
 const adminPassword = 'AdUnNi';
 
-// Admin panel route
+let msgCounter = 1;
+const messageMap = {}; // Store messages by ID
+
+// Admin Panel
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Handle user reports
+// Handle User Reports
 app.post('/report', (req, res) => {
   const { report } = req.body;
   if (!report) return res.status(400).json({ error: 'Empty report' });
@@ -35,10 +38,10 @@ app.post('/report', (req, res) => {
   res.json({ success: true });
 });
 
-// Socket handling
+// Socket Handling
 io.on('connection', (socket) => {
 
-  // Return a public room with users for random join
+  // Find random public room
   socket.on('findPublicRoom', (cb) => {
     const publicRoom = Object.entries(rooms).find(([name, info]) =>
       info.isPublic && info.users.length > 0
@@ -53,7 +56,6 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Create room if it doesn’t exist
     if (!rooms[room]) {
       rooms[room] = {
         users: [],
@@ -63,40 +65,53 @@ io.on('connection', (socket) => {
     }
 
     if (rooms[room].password && rooms[room].password !== password) {
-      socket.emit('message', 'Incorrect room password.');
+      socket.emit('message', {
+        id: 'sys-' + Date.now(),
+        sender: 'System',
+        text: 'Incorrect room password.',
+        reactions: []
+      });
       return;
     }
 
     socket.username = username;
     socket.room = room;
     socket.join(room);
-
     rooms[room].users.push({ username });
 
-    io.to(room).emit('message', `${username} joined the room.`);
+    const joinMsg = {
+      id: 'msg-' + (msgCounter++),
+      sender: 'System',
+      text: `${username} joined the room.`,
+      reactions: []
+    };
+
+    io.to(room).emit('message', joinMsg);
     io.to(room).emit('roomUsers', rooms[room].users);
   });
 
-  // Chat message
-  let msgCounter = 1;
+  // Handle Chat Message
+  socket.on('chatMessage', (msgText) => {
+    const id = 'msg-' + (msgCounter++);
+    const fullMsg = {
+      id,
+      sender: socket.username,
+      text: msgText,
+      reactions: []
+    };
 
-socket.on('chatMessage', (msg) => {
-  const id = 'msg-' + (msgCounter++);
-  const fullMsg = {
-    id,
-    sender: socket.username,
-    text: msg
-  };
-  logs.push({ room: socket.room, msg: fullMsg });
-  io.to(socket.room).emit('message', fullMsg);
-});
+    messageMap[id] = fullMsg;
+    logs.push({ room: socket.room, msg: fullMsg });
 
-  // Typing indicator
+    io.to(socket.room).emit('message', fullMsg);
+  });
+
+  // Handle Typing
   socket.on('typing', () => {
     socket.to(socket.room).emit('displayTyping', socket.username);
   });
 
-  // Voice message
+  // Handle Voice Note
   socket.on('voiceMessage', (data) => {
     io.to(socket.room).emit('voiceNote', {
       sender: socket.username,
@@ -104,12 +119,32 @@ socket.on('chatMessage', (msg) => {
     });
   });
 
-  // Handle disconnect
+  // Handle Emoji Reaction
+  socket.on('addReaction', ({ msgId, emoji }) => {
+    const message = messageMap[msgId];
+    if (message) {
+      message.reactions.push({ user: socket.username, emoji });
+      io.to(socket.room).emit('reactionUpdate', {
+        msgId,
+        reactions: message.reactions
+      });
+    }
+  });
+
+  // Disconnect
   socket.on('disconnect', () => {
     const room = socket.room;
     if (room && rooms[room]) {
       rooms[room].users = rooms[room].users.filter(u => u.username !== socket.username);
-      io.to(room).emit('message', `${socket.username} left the room.`);
+
+      const leaveMsg = {
+        id: 'msg-' + (msgCounter++),
+        sender: 'System',
+        text: `${socket.username} left the room.`,
+        reactions: []
+      };
+
+      io.to(room).emit('message', leaveMsg);
       io.to(room).emit('roomUsers', rooms[room].users);
 
       if (rooms[room].users.length === 0) {
@@ -119,35 +154,38 @@ socket.on('chatMessage', (msg) => {
     }
   });
 
-  // Admin login
+  // Admin Login
   socket.on('adminLogin', (password, cb) => {
     cb(password === adminPassword);
   });
 
-  // Get all active rooms
   socket.on('getRooms', (cb) => {
     cb(Object.keys(rooms));
   });
 
-  // Get users in a room
   socket.on('getRoomUsers', (room, cb) => {
     cb(rooms[room]?.users.map(u => u.username) || []);
   });
 
   // Kick a user
   socket.on('kickUser', ({ room, user }) => {
-    const roomUsers = rooms[room]?.users || [];
-    const exists = roomUsers.find(u => u.username === user);
-
-    if (!exists) return; // prevent kicking non-existent users
+    const exists = rooms[room]?.users.find(u => u.username === user);
+    if (!exists) return;
 
     kickedUsers[room] = kickedUsers[room] || [];
     if (!kickedUsers[room].includes(user)) {
       kickedUsers[room].push(user);
     }
 
-    logs.push({ room, msg: `${user} was kicked by the support.` });
-    io.to(room).emit('message', `${user} was kicked by the support.`);
+    const kickMsg = {
+      id: 'msg-' + (msgCounter++),
+      sender: 'System',
+      text: `${user} was kicked by the support.`,
+      reactions: []
+    };
+
+    logs.push({ room, msg: kickMsg });
+    io.to(room).emit('message', kickMsg);
 
     for (let [id, s] of io.sockets.sockets) {
       if (s.username === user && s.room === room) {
@@ -160,26 +198,33 @@ socket.on('chatMessage', (msg) => {
   // Mute a user
   socket.on('muteUser', ({ room, user }) => {
     const exists = rooms[room]?.users.find(u => u.username === user);
-    if (!exists) return; // skip if user is not in the room
+    if (!exists) return;
 
-    logs.push({ room, msg: `${user} was muted by the support.` });
-    io.to(room).emit('message', `${user} was muted by the support.`);
+    const muteMsg = {
+      id: 'msg-' + (msgCounter++),
+      sender: 'System',
+      text: `${user} was muted by the support.`,
+      reactions: []
+    };
+
+    logs.push({ room, msg: muteMsg });
+    io.to(room).emit('message', muteMsg);
   });
 
-  // Get chat logs
+  // Get logs
   socket.on('getLogs', (room, cb) => {
     const roomLogs = logs.filter(log => log.room === room).map(l => l.msg);
     cb(roomLogs);
   });
 
-  // Get and clear reports
+  // Get Reports
   socket.on('getReports', (cb) => {
     cb([...reports]);
     reports.length = 0;
   });
 });
 
-// Server start
+// Start Server
 server.listen(3000, () => {
   console.log('ShadowTalk 2050 server is live on port 3000');
 });
