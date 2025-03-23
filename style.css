@@ -441,3 +441,43 @@ body.dark #chatBox {
   font-size: 20px;
   cursor: pointer;
 }
+.message-wrapper {
+  margin-bottom: 12px;
+}
+
+.message {
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #eee;
+  box-shadow: 0 0 5px #888;
+  cursor: pointer;
+}
+
+.message-wrapper.me .message {
+  background-color: #d4fcd4;
+  box-shadow: 0 0 6px #33cc33;
+}
+
+.reactions-container {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.reaction-picker {
+  position: absolute;
+  display: flex;
+  gap: 10px;
+  background: #fff;
+  padding: 5px 10px;
+  border-radius: 20px;
+  box-shadow: 0 0 10px #333;
+  z-index: 1000;
+}
+
+.reaction-picker button {
+  font-size: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
