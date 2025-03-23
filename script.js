@@ -1,4 +1,3 @@
-
 const socket = io();
 
 let isRecording = false;
@@ -114,30 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // SOCKET EVENTS
-socket.on('message', msg => {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'message-wrapper';
 
-  const p = document.createElement('p');
-  p.innerHTML = msg;
-  wrapper.appendChild(p);
-
-  const reactions = document.createElement('div');
-  reactions.className = 'reactions';
-  ['❤️', '😂', '👍', '👎'].forEach(emoji => {
-    const btn = document.createElement('button');
-    btn.className = 'reaction-btn';
-    btn.textContent = emoji;
-    btn.onclick = () => {
-      showToast(`You reacted with ${emoji}`, 'info');
-    };
-    reactions.appendChild(btn);
-  });
-
-  wrapper.appendChild(reactions);
-  chatBox.appendChild(wrapper);
-  chatBox.scrollTop = chatBox.scrollHeight;
-});
 
 socket.on('displayTyping', user => {
   typingStatus.textContent = `${user} is typing...`;
@@ -154,7 +130,35 @@ socket.on('voiceNote', ({ sender, audioData }) => {
 
 socket.on('roomUsers', (users) => {
   const list = users.map(u => u.username).join(', ');
-  document.getElementById('usersList').textContent = `Users: ${list}`;
+  document.getElementById('usersList').textCsocket.on('message', ({ id, sender, text, fromMe, reaction }) => {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'message-wrapper';
+  if (fromMe) wrapper.classList.add('my-message');
+  wrapper.setAttribute('data-id', id);
+
+  const p = document.createElement('p');
+  p.textContent = `${sender}: ${text}`;
+  wrapper.appendChild(p);
+
+  // Add reaction if exists
+  if (reaction) {
+    const reactEl = document.createElement('div');
+    reactEl.className = 'reaction-icon';
+    reactEl.innerText = reaction;
+    wrapper.appendChild(reactEl);
+  }
+
+  // Click to trigger popup
+  wrapper.onclick = (e) => {
+    const popup = document.getElementById('reactionPopup');
+    popup.style.top = `${e.clientY - 40}px`;
+    popup.style.left = `${e.clientX}px`;
+    popup.classList.remove('hidden');
+    popup.setAttribute('data-msg-id', id);
+  };
+
+  chatBox.appendChild(wrapper);
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
 
 socket.on('kicked', () => {
@@ -216,3 +220,10 @@ function playSound() {
   const audio = new Audio('https://cdn.jsdelivr.net/gh/innocenttaylor/chat-sounds/soft-pop.mp3');
   audio.play();
 }
+  function sendReaction(emoji) {
+  const popup = document.getElementById('reactionPopup');
+  const msgId = popup.getAttribute('data-msg-id');
+  popup.classList.add('hidden');
+  popup.removeAttribute('data-msg-id');
+  socket.emit('addReaction', { msgId, emoji });
+  }
