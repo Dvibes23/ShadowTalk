@@ -7,10 +7,8 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Particle Background -->
   <div id="particles-js" class="particles"></div>
 
-  <!-- Global Dark Mode Toggle -->
   <div class="global-toggle">
     <label class="switch">
       <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" />
@@ -19,13 +17,9 @@
     <span id="darkLabel">Dark Mode</span>
   </div>
 
-  <!-- Loader (Hidden by default, show if needed) -->
   <div id="loader" class="loader hidden"></div>
 
-  <!-- Main Container -->
   <div class="container animated fadeIn">
-    
-    <!-- Join Section -->
     <div id="auth" class="centered glass-panel">
       <h1 class="glow">ShadowTalk 2050</h1>
       <input type="text" id="nickname" placeholder="Your nickname" />
@@ -40,7 +34,6 @@
       <button onclick="enterChat()">Enter Chat</button>
     </div>
 
-    <!-- Chat Room Section -->
     <div id="chatRoom" class="hidden glass-panel animated fadeInUp">
       <div id="roomInfo">
         <h2 id="roomName">Room:</h2>
@@ -49,10 +42,18 @@
 
       <div id="chatBox" class="neon-box"></div>
 
+      <div id="reactionPopup" class="reaction-popup hidden">
+        <button onclick="sendReaction('❤️')">❤️</button>
+        <button onclick="sendReaction('😂')">😂</button>
+        <button onclick="sendReaction('👍')">👍</button>
+        <button onclick="sendReaction('👎')">👎</button>
+        <button onclick="closeReactionPopup()">×</button>
+      </div>
+
       <div class="inputArea">
-  <input type="text" id="messageInput" placeholder="Type your message..." />
-  <button onclick="sendMessage()">Send</button>
-  <button id="recordBtn" onclick="toggleRecording()">🎤</button>
+        <input type="text" id="messageInput" placeholder="Type your message..." />
+        <button onclick="sendMessage()">Send</button>
+        <button id="recordBtn" onclick="toggleRecording()">🎤</button>
       </div>
 
       <div id="typingStatus"></div>
@@ -61,7 +62,6 @@
       <button id="reportBtn" onclick="openReportModal()">Report</button>
     </div>
 
-    <!-- Report Modal -->
     <div id="reportModal" class="modal hidden">
       <div class="modal-content neon-border">
         <h3>Report a user or message</h3>
@@ -72,32 +72,13 @@
     </div>
   </div>
 
- <!-- Scripts -->
-<script src="/socket.io/socket.io.js"></script>
-<script src="script.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/emoji-button@4.6.4/dist/index.min.js"></script>
-
-<script>
-  // Load particles
-  particlesJS.load('particles-js', 'particles.json', () => {
-    console.log('particles.js loaded');
-  });
-
-  // Optional: Show loader for demo
-  // document.getElementById('loader').classList.remove('hidden');
-  // setTimeout(() => {
-  //   document.getElementById('loader').classList.add('hidden');
-  // }, 2000);
-</script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script>
-  // Reaction click handler
-  function reactToMessage(msgId) {
-    const emoji = prompt("React with emoji:");
-    if (emoji) {
-      socket.emit('addReaction', { msgId, emoji });
-    }
-  }
+    particlesJS.load('particles-js', 'particles.json', () => {
+      console.log('particles.js loaded');
+    });
   </script>
-  </body>
+</body>
 </html>
