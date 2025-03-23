@@ -89,20 +89,25 @@ async function toggleRecording() {
   }
 }
 
-// DARK MODE
-function toggleDarkMode() {
-  const isDark = darkToggle?.checked;
-  document.body.classList.toggle('dark', isDark);
-  localStorage.setItem('darkMode', isDark);
-}
+// DARK MODE TOGGLE
+document.addEventListener('DOMContentLoaded', () => {
+  const darkToggle = document.getElementById('darkToggle');
 
-window.onload = () => {
-  const darkSaved = localStorage.getItem('darkMode') === 'true';
-  if (darkSaved) {
+  // Apply saved mode
+  if (localStorage.getItem('darkMode') === 'true') {
     document.body.classList.add('dark');
     if (darkToggle) darkToggle.checked = true;
   }
-};
+
+  // Listen for changes
+  if (darkToggle) {
+    darkToggle.addEventListener('change', () => {
+      const isDark = darkToggle.checked;
+      document.body.classList.toggle('dark', isDark);
+      localStorage.setItem('darkMode', isDark);
+    });
+  }
+});
 
 // MESSAGES
 socket.on('message', msg => {
