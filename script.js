@@ -21,25 +21,32 @@ const reportModal = document.getElementById('reportModal');
 // JOIN CHAT ROOM
 function enterChat() {
   username = nicknameInput.value.trim();
-
-  // Generate room name if empty
-  let inputRoom = roomInput.value.trim();
-  if (!inputRoom) {
-    inputRoom = `room-${Math.floor(Math.random() * 1000)}`;
-    roomInput.value = inputRoom; // update the input field with the generated name
-  }
-  room = inputRoom;
-
   const password = passwordInput.value.trim();
   const isPublic = !privateRoomCheckbox.checked;
+  let inputRoom = roomInput.value.trim();
 
   if (!username) return alert("Please enter a nickname");
 
-  socket.emit('joinRoom', { username, room, password, isPublic });
+  if (!inputRoom && isPublic) {
+    // Try to join existing public room first
+    socket.emit('findPublicRoom', (foundRoom) => {
+      room = foundRoom || `room-${Math.floor(Math.random() * 1000)}`;
+      joinFinal(room);
+    });
+  } else {
+    room = inputRoom || `room-${Math.floor(Math.random() * 1000)}`;
+    joinFinal(room);
+  }
 
-  document.getElementById('auth').classList.add('hidden');
-  document.getElementById('chatRoom').classList.remove('hidden');
-  document.getElementById('roomName').textContent = `Room: ${room}`;
+  function joinFinal(roomToJoin) {
+    room = roomToJoin;
+    roomInput.value = room; // update the input field with final name
+    socket.emit('joinRoom', { username, room, password, isPublic });
+
+    document.getElementById('auth').classList.add('hidden');
+    document.getElementById('chatRoom').classList.remove('hidden');
+    document.getElementById('roomName').textContent = `Room: ${room}`;
+  }
 }
 
 // SEND MESSAGE
@@ -91,15 +98,11 @@ async function toggleRecording() {
 
 // DARK MODE TOGGLE
 document.addEventListener('DOMContentLoaded', () => {
-  const darkToggle = document.getElementById('darkToggle');
-
-  // Apply saved mode
   if (localStorage.getItem('darkMode') === 'true') {
     document.body.classList.add('dark');
     if (darkToggle) darkToggle.checked = true;
   }
 
-  // Listen for changes
   if (darkToggle) {
     darkToggle.addEventListener('change', () => {
       const isDark = darkToggle.checked;
@@ -137,7 +140,7 @@ socket.on('roomUsers', (users) => {
   document.getElementById('usersList').textContent = `Users: ${list}`;
 });
 
-socket.on('kicked', (roomName) => {
+socket.on('kicked', () => {
   alert("You were kicked by the support and cannot rejoin this room.");
   window.location.reload();
 });
@@ -160,10 +163,10 @@ function submitReport() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ report: input })
   }).then(() => {
-    alert("Report submitted successfully action will be taken on the report within few minutes.");
+    alert("Report submitted successfully. Action will be taken shortly.");
     document.getElementById("reportTarget").value = "";
     closeReportModal();
   }).catch(() => {
     alert("Failed to submit report.");
   });
-}
+    }
