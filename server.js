@@ -131,8 +131,8 @@ io.on('connection', (socket) => {
       kickedUsers[room].push(user);
     }
 
-    logs.push({ room, msg: `${user} was kicked by admin.` });
-    io.to(room).emit('message', `${user} was kicked by admin.`);
+    logs.push({ room, msg: `${user} was kicked by the support.` });
+    io.to(room).emit('message', `${user} was kicked by the support.`);
 
     for (let [id, s] of io.sockets.sockets) {
       if (s.username === user && s.room === room) {
@@ -147,8 +147,8 @@ io.on('connection', (socket) => {
     const exists = rooms[room]?.users.find(u => u.username === user);
     if (!exists) return; // skip if user is not in the room
 
-    logs.push({ room, msg: `${user} was muted by admin.` });
-    io.to(room).emit('message', `${user} was muted by admin.`);
+    logs.push({ room, msg: `${user} was muted by the support.` });
+    io.to(room).emit('message', `${user} was muted by the support.`);
   });
 
   // Get chat logs
