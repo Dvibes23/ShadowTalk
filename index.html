@@ -91,3 +91,14 @@
   //   document.getElementById('loader').classList.add('hidden');
   // }, 2000);
 </script>
+  <script>
+  // Reaction click handler
+  function reactToMessage(msgId) {
+    const emoji = prompt("React with emoji:");
+    if (emoji) {
+      socket.emit('addReaction', { msgId, emoji });
+    }
+  }
+  </script>
+  </body>
+</html>
