@@ -5,6 +5,8 @@ let mediaRecorder;
 let chunks = [];
 let username = '';
 let room = '';
+let localStream;
+let peerConnection;
 
 const nicknameInput = document.getElementById('nickname');
 const roomInput = document.getElementById('room');
@@ -18,7 +20,7 @@ const recordingNotice = document.getElementById('recordingNotice');
 const darkToggle = document.getElementById('darkToggle');
 const reportModal = document.getElementById('reportModal');
 
-// JOIN CHAT ROOM
+// Join Chat
 function enterChat() {
   username = nicknameInput.value.trim();
   const password = passwordInput.value.trim();
@@ -49,21 +51,22 @@ function enterChat() {
   }
 }
 
-// SEND MESSAGE
+// Send Message
 function sendMessage() {
   const msg = messageInput.value.trim();
   if (msg) {
-    socket.emit('chatMessage', msg);
+    const msgData = { username, text: msg, id: Date.now() };
+    socket.emit('chatMessage', msgData);
     messageInput.value = '';
   }
 }
 
-// TYPING INDICATOR
+// Typing
 messageInput.addEventListener('input', () => {
   socket.emit('typing');
 });
 
-// VOICE RECORDING
+// Voice Recording
 async function toggleRecording() {
   if (isRecording) {
     mediaRecorder.stop();
@@ -81,7 +84,7 @@ async function toggleRecording() {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         const reader = new FileReader();
         reader.onloadend = () => {
-          socket.emit('voiceMessage', reader.result);
+          socket.emit('voiceMessage', { sender: username, audioData: reader.result });
         };
         reader.readAsDataURL(blob);
       };
@@ -96,7 +99,107 @@ async function toggleRecording() {
   }
 }
 
-// DARK MODE TOGGLE
+// Emoji Picker
+const emojiBtn = document.getElementById('emojiBtn');
+const picker = new EmojiButton({
+  theme: localStorage.getItem('darkMode') === 'true' ? 'dark' : 'light'
+});
+
+picker.on('emoji', emoji => {
+  messageInput.value += emoji;
+});
+
+if (emojiBtn) {
+  emojiBtn.addEventListener('click', () => {
+    picker.togglePicker(emojiBtn);
+  });
+}
+
+// Reaction Popup
+function createReactions(msgId) {
+  const popup = document.createElement('div');
+  popup.className = 'reaction-popup';
+
+  ['❤️','😂','👍','😮','😢','🙏','😍'].forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.textContent = emoji;
+    btn.onclick = () => {
+      socket.emit('addReaction', { msgId, emoji });
+      popup.remove();
+    };
+    popup.appendChild(btn);
+  });
+
+  return popup;
+}
+
+// Notification
+function notify(title, body) {
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body });
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(p => {
+      if (p === 'granted') new Notification(title, { body });
+    });
+  }
+}
+
+// Socket Events
+socket.on('message', data => {
+  const wrapper = document.createElement('div');
+  wrapper.className = data.username === username ? 'my-msg' : 'msg';
+
+  const content = document.createElement('div');
+  content.className = 'msg-content';
+  content.innerHTML = `<strong>${data.username}:</strong> ${data.text}`;
+  content.onclick = () => {
+    const popup = createReactions(data.id);
+    wrapper.appendChild(popup);
+    setTimeout(() => popup.remove(), 4000);
+  };
+
+  wrapper.appendChild(content);
+
+  if (data.reaction) {
+    const reaction = document.createElement('div');
+    reaction.className = 'msg-reaction';
+    reaction.textContent = data.reaction;
+    wrapper.appendChild(reaction);
+  }
+
+  chatBox.appendChild(wrapper);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  if (data.username !== username) {
+    playSound();
+    notify(data.username, data.text);
+  }
+});
+
+socket.on('displayTyping', user => {
+  typingStatus.textContent = `${user} is typing...`;
+  setTimeout(() => typingStatus.textContent = '', 1500);
+});
+
+socket.on('voiceNote', ({ sender, audioData }) => {
+  const div = document.createElement('div');
+  div.innerHTML = `<strong>${sender} sent a voice note:</strong><br>
+    <audio controls src="${audioData}" style="width: 100%;"></audio>`;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
+socket.on('roomUsers', (users) => {
+  const list = users.map(u => u.username).join(', ');
+  document.getElementById('usersList').textContent = `Users: ${list}`;
+});
+
+socket.on('kicked', () => {
+  alert("You were kicked by the support and cannot rejoin this room.");
+  window.location.reload();
+});
+
+// Dark Mode
 document.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem('darkMode') === 'true') {
     document.body.classList.add('dark');
@@ -112,83 +215,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// SOCKET EVENTS
-
-
-socket.on('displayTyping', user => {
-  typingStatus.textContent = `${user} is typing...`;
-  setTimeout(() => typingStatus.textContent = '', 1500);
-});
-
-socket.on('voiceNote', ({ sender, audioData }) => {
-  const div = document.createElement('div');
-  div.innerHTML = `<strong>${sender} sent a voice note:</strong><br>
-  <audio controls src="${audioData}" style="width: 100%;"></audio>`;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-});
-
-socket.on('roomUsers', (users) => {
-  const list = users.map(u => u.username).join(', ');
-  document.getElementById('usersList').textCsocket.on('message', ({ id, sender, text, fromMe, reaction }) => {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'message-wrapper';
-  if (fromMe) wrapper.classList.add('my-message');
-  wrapper.setAttribute('data-id', id);
-
-  const p = document.createElement('p');
-  p.textContent = `${sender}: ${text}`;
-  wrapper.appendChild(p);
-
-  // Add reaction if exists
-  if (reaction) {
-    const reactEl = document.createElement('div');
-    reactEl.className = 'reaction-icon';
-    reactEl.innerText = reaction;
-    wrapper.appendChild(reactEl);
-  }
-
-  // Click to trigger popup
-  wrapper.onclick = (e) => {
-    const popup = document.getElementById('reactionPopup');
-    popup.style.top = `${e.clientY - 40}px`;
-    popup.style.left = `${e.clientX}px`;
-    popup.classList.remove('hidden');
-    popup.setAttribute('data-msg-id', id);
-  };
-
-  chatBox.appendChild(wrapper);
-  chatBox.scrollTop = chatBox.scrollHeight;
-});
-
-socket.on('kicked', () => {
-  alert("You were kicked by the support and cannot rejoin this room.");
-  window.location.reload();
-});
-
-// Emoji Picker
-const emojiBtn = document.getElementById('emojiBtn');
-const picker = new EmojiButton({
-  theme: localStorage.getItem('darkMode') === 'true' ? 'dark' : 'light'
-});
-
-picker.on('emoji', emoji => {
-  messageInput.value += emoji;
-});
-
-emojiBtn.addEventListener('click', () => {
-  picker.togglePicker(emojiBtn);
-});
-
 // REPORT
 function openReportModal() {
   reportModal.classList.remove('hidden');
 }
-
 function closeReportModal() {
   reportModal.classList.add('hidden');
 }
-
 function submitReport() {
   const input = document.getElementById("reportTarget").value.trim();
   if (!input) return alert("Please enter full details of your report to the support.");
@@ -206,7 +239,7 @@ function submitReport() {
   });
 }
 
-// TOAST NOTIFICATION
+// TOAST
 function showToast(msg, type = 'info') {
   const toast = document.createElement('div');
   toast.className = 'toast ' + type;
@@ -215,15 +248,8 @@ function showToast(msg, type = 'info') {
   setTimeout(() => toast.remove(), 4000);
 }
 
-// MESSAGE SOUND
+// SOUND
 function playSound() {
   const audio = new Audio('https://cdn.jsdelivr.net/gh/innocenttaylor/chat-sounds/soft-pop.mp3');
   audio.play();
 }
-  function sendReaction(emoji) {
-  const popup = document.getElementById('reactionPopup');
-  const msgId = popup.getAttribute('data-msg-id');
-  popup.classList.add('hidden');
-  popup.removeAttribute('data-msg-id');
-  socket.emit('addReaction', { msgId, emoji });
-  }
