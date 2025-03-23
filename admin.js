@@ -1,78 +1,80 @@
+const socket = io();
 
-document.addEventListener('DOMContentLoaded', () => {
-  const passwordPrompt = prompt('Enter admin password:');
-  if (passwordPrompt !== 'AdUnNi') {
-    alert('Access denied!');
-    window.location.href = '/';
-    return;
-  }
+// Password verification
+function verify() {
+  const password = document.getElementById("adminPass").value;
+  socket.emit("adminLogin", password, (isValid) => {
+    if (isValid) {
+      document.getElementById("auth").classList.add("hidden");
+      document.getElementById("adminPanel").classList.remove("hidden");
+    } else {
+      alert("Incorrect password.");
+    }
+  });
+}
 
-  const roomListBtn = document.getElementById('roomListBtn');
-  const getUsersBtn = document.getElementById('getUsersBtn');
-  const kickBtn = document.getElementById('kickBtn');
-  const muteBtn = document.getElementById('muteBtn');
-  const viewLogsBtn = document.getElementById('viewLogsBtn');
-  const viewReportsBtn = document.getElementById('viewReportsBtn');
+// Show all active rooms
+function getRooms() {
+  socket.emit("getRooms", (rooms) => {
+    const list = document.getElementById("roomList");
+    list.innerHTML = "";
+    rooms.forEach((room) => {
+      const li = document.createElement("li");
+      li.textContent = room;
+      list.appendChild(li);
+    });
+  });
+}
 
-  roomListBtn.onclick = () => {
-    fetch('/admin/rooms')
-      .then(res => res.json())
-      .then(data => {
-        alert('Active Rooms:\n' + data.rooms.join('\n'));
-      });
-  };
+// Show users in selected room
+function getUsers() {
+  const room = document.getElementById("roomToCheck").value.trim();
+  if (!room) return alert("Enter room name");
 
-  getUsersBtn.onclick = () => {
-    const room = document.getElementById('roomInput').value;
-    fetch(`/admin/room-users/${room}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          alert(data.error);
-        } else {
-          alert(`Users in ${room}:\n` + data.users.join('\n'));
-        }
-      });
-  };
+  socket.emit("getRoomUsers", room, (users) => {
+    const ul = document.getElementById("userList");
+    ul.innerHTML = "";
+    users.forEach((user) => {
+      const li = document.createElement("li");
+      li.textContent = user;
+      ul.appendChild(li);
+    });
+  });
+}
 
-  kickBtn.onclick = () => {
-    const user = document.getElementById('userInput').value;
-    const room = document.getElementById('roomInput').value;
-    fetch('/admin/kick', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, room })
-    })
-      .then(res => res.json())
-      .then(data => alert(data.message));
-  };
+// Kick user
+function kick() {
+  const room = document.getElementById("roomTarget").value.trim();
+  const user = document.getElementById("userToKick").value.trim();
+  if (!room || !user) return alert("Enter both username and room");
 
-  muteBtn.onclick = () => {
-    const user = document.getElementById('userInput').value;
-    const room = document.getElementById('roomInput').value;
-    fetch('/admin/mute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, room })
-    })
-      .then(res => res.json())
-      .then(data => alert(data.message));
-  };
+  socket.emit("kickUser", { room, user });
+  alert(`${user} has been kicked from ${room}`);
+}
 
-  viewLogsBtn.onclick = () => {
-    const room = document.getElementById('logRoomInput').value;
-    fetch(`/admin/logs/${room}`)
-      .then(res => res.json())
-      .then(data => {
-        alert(`Logs for ${room}:\n` + data.logs.join('\n'));
-      });
-  };
+// Mute user
+function mute() {
+  const room = document.getElementById("roomTarget").value.trim();
+  const user = document.getElementById("userToKick").value.trim();
+  if (!room || !user) return alert("Enter both username and room");
 
-  viewReportsBtn.onclick = () => {
-    fetch('/admin/reports')
-      .then(res => res.json())
-      .then(data => {
-        alert('Reports:\n' + data.reports.join('\n\n'));
-      });
-  };
-});
+  socket.emit("muteUser", { room, user });
+  alert(`${user} has been muted in ${room}`);
+}
+
+// View logs
+function getLogs() {
+  const room = document.getElementById("logRoom").value.trim();
+  if (!room) return alert("Enter room name");
+
+  socket.emit("getLogs", room, (logs) => {
+    document.getElementById("logBox").textContent = logs.join("\n");
+  });
+}
+
+// View reports
+function getReports() {
+  socket.emit("getReports", (reports) => {
+    document.getElementById("reportBox").textContent = reports.join("\n\n");
+  });
+}
