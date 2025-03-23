@@ -21,7 +21,15 @@ const reportModal = document.getElementById('reportModal');
 // JOIN CHAT ROOM
 function enterChat() {
   username = nicknameInput.value.trim();
-  room = roomInput.value.trim(); // can be blank
+
+  // Generate room name if empty
+  let inputRoom = roomInput.value.trim();
+  if (!inputRoom) {
+    inputRoom = `room-${Math.floor(Math.random() * 1000)}`;
+    roomInput.value = inputRoom; // update the input field with the generated name
+  }
+  room = inputRoom;
+
   const password = passwordInput.value.trim();
   const isPublic = !privateRoomCheckbox.checked;
 
@@ -31,7 +39,7 @@ function enterChat() {
 
   document.getElementById('auth').classList.add('hidden');
   document.getElementById('chatRoom').classList.remove('hidden');
-  document.getElementById('roomName').textContent = `Room: ${room || "Auto-selected"}`;
+  document.getElementById('roomName').textContent = `Room: ${room}`;
 }
 
 // SEND MESSAGE
