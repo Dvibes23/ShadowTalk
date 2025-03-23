@@ -419,3 +419,25 @@ body.dark #chatBox {
   background-color: rgba(255, 255, 255, 0.1);
   transform: scale(1.2);
 }
+/* My Message Highlight */
+.my-message {
+  background-color: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 8px rgba(100, 200, 255, 0.9);
+}
+
+/* Reaction Popup Styling */
+#reactionPopup {
+  position: absolute;
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  display: flex;
+  gap: 8px;
+  z-index: 1000;
+}
+
+#reactionPopup span {
+  font-size: 20px;
+  cursor: pointer;
+}
