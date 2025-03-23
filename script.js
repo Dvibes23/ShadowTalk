@@ -9,7 +9,7 @@ let room = '';
 const nicknameInput = document.getElementById('nickname');
 const roomInput = document.getElementById('room');
 const passwordInput = document.getElementById('roomPassword');
-const privateRoomCheckbox = document.getElementById('publicRoom'); // now used as private
+const privateRoomCheckbox = document.getElementById('privateRoom'); // fixed ID
 const chatBox = document.getElementById('chatBox');
 const messageInput = document.getElementById('messageInput');
 const typingStatus = document.getElementById('typingStatus');
@@ -23,7 +23,7 @@ function enterChat() {
   username = nicknameInput.value.trim();
   room = roomInput.value.trim() || `room-${Math.floor(Math.random() * 1000)}`;
   const password = passwordInput.value.trim();
-  const isPublic = !privateRoomCheckbox.checked; // reversed logic
+  const isPublic = !privateRoomCheckbox.checked; // correct logic
 
   if (!username) return alert("Please enter a nickname");
 
@@ -42,12 +42,12 @@ function sendMessage() {
   }
 }
 
-// Typing event
+// Typing
 messageInput.addEventListener('input', () => {
   socket.emit('typing');
 });
 
-// Record and send voice note
+// Voice recording
 async function toggleRecording() {
   if (isRecording) {
     mediaRecorder.stop();
@@ -58,7 +58,6 @@ async function toggleRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.start();
       chunks = [];
 
       mediaRecorder.ondataavailable = e => chunks.push(e.data);
@@ -71,6 +70,7 @@ async function toggleRecording() {
         reader.readAsDataURL(blob);
       };
 
+      mediaRecorder.start();
       isRecording = true;
       recordBtn.textContent = '■';
       recordingNotice.classList.remove('hidden');
@@ -80,22 +80,22 @@ async function toggleRecording() {
   }
 }
 
-// Handle dark/light mode toggle
+// Dark mode
 function toggleDarkMode() {
-  document.body.classList.toggle('dark', darkToggle.checked);
-  localStorage.setItem('darkMode', darkToggle.checked);
+  const isDark = darkToggle.checked;
+  document.body.classList.toggle('dark', isDark);
+  localStorage.setItem('darkMode', isDark);
 }
 
-// Load saved dark mode
 window.onload = () => {
-  const darkSaved = localStorage.getItem('darkMode') === 'true';
-  if (darkSaved) {
+  const saved = localStorage.getItem('darkMode') === 'true';
+  if (saved && darkToggle) {
     darkToggle.checked = true;
     document.body.classList.add('dark');
   }
 };
 
-// Socket Listeners
+// Socket listeners
 socket.on('message', msg => {
   const p = document.createElement('p');
   p.innerHTML = msg;
@@ -126,7 +126,7 @@ socket.on('kicked', (roomName) => {
   window.location.reload();
 });
 
-// Report modal functions
+// Report modal
 function openReportModal() {
   reportModal.classList.remove('hidden');
 }
