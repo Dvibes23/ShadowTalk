@@ -1,32 +1,52 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use(express.static(__dirname));
+app.use(express.json());
+
 const rooms = {};
 const logs = [];
 const reports = [];
 const kickedUsers = {};
 
-app.use(express.static(__dirname));
+const adminPassword = 'AdUnNi';
 
+// Admin panel route
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 
-let adminPassword = 'AdUnNi';
+// Handle report POST from frontend
+app.post('/report', (req, res) => {
+  const { report } = req.body;
+  if (!report) return res.status(400).json({ error: 'Empty report' });
+
+  const timestamp = new Date().toISOString();
+  const entry = `[${timestamp}] ${report}`;
+  reports.push(entry);
+  fs.appendFileSync('reports.log', entry + '\n');
+
+  res.json({ success: true });
+});
 
 io.on('connection', (socket) => {
-  socket.on('joinRoom', ({ username, room, password }) => {
+  socket.on('joinRoom', ({ username, room, password, isPublic }) => {
     if (kickedUsers[room]?.includes(username)) {
-      socket.emit('message', `You were kicked from this room.`);
+      socket.emit('kicked', room);
       return;
     }
 
     if (!rooms[room]) {
-      rooms[room] = { users: [], isPublic: true, password };
+      rooms[room] = {
+        users: [],
+        password: password || '',
+        isPublic: isPublic || false
+      };
     }
 
     if (rooms[room].password && rooms[room].password !== password) {
@@ -38,10 +58,10 @@ io.on('connection', (socket) => {
     socket.room = room;
     socket.join(room);
 
-    rooms[room].users.push(username);
+    rooms[room].users.push({ username });
 
-    io.to(room).emit('message', `Welcome ${username}!`);
-    io.to(room).emit('message', `Users: ${rooms[room].users.join(', ')}`);
+    io.to(room).emit('message', `${username} joined the room.`);
+    io.to(room).emit('roomUsers', rooms[room].users);
   });
 
   socket.on('chatMessage', (msg) => {
@@ -56,22 +76,24 @@ io.on('connection', (socket) => {
   });
 
   socket.on('voiceMessage', (data) => {
+    const room = socket.room;
     const audio = {
       sender: socket.username,
       audioData: data
     };
-    io.to(socket.room).emit('voiceNote', audio);
+    io.to(room).emit('voiceNote', audio);
   });
 
   socket.on('disconnect', () => {
     const room = socket.room;
     if (room && rooms[room]) {
-      rooms[room].users = rooms[room].users.filter(u => u !== socket.username);
+      rooms[room].users = rooms[room].users.filter(u => u.username !== socket.username);
       io.to(room).emit('message', `${socket.username} left the room.`);
+      io.to(room).emit('roomUsers', rooms[room].users);
     }
   });
 
-  // Admin Panel Events
+  // Admin features
   socket.on('adminLogin', (password, cb) => {
     cb(password === adminPassword);
   });
@@ -81,20 +103,23 @@ io.on('connection', (socket) => {
   });
 
   socket.on('getRoomUsers', (room, cb) => {
-    cb(rooms[room]?.users || []);
+    cb(rooms[room]?.users.map(u => u.username) || []);
   });
 
   socket.on('kickUser', ({ room, user }) => {
     kickedUsers[room] = kickedUsers[room] || [];
-    kickedUsers[room].push(user);
+    if (!kickedUsers[room].includes(user)) {
+      kickedUsers[room].push(user);
+    }
     logs.push({ room, msg: `${user} was kicked by admin.` });
     io.to(room).emit('message', `${user} was kicked by admin.`);
-    io.sockets.sockets.forEach(s => {
+
+    for (let [id, s] of io.sockets.sockets) {
       if (s.username === user && s.room === room) {
         s.leave(room);
-        s.emit('message', 'You have been kicked from the room.');
+        s.emit('kicked', room);
       }
-    });
+    }
   });
 
   socket.on('muteUser', ({ room, user }) => {
@@ -103,12 +128,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('getLogs', (room, cb) => {
-    cb(logs.filter(l => l.room === room));
-  });
-
-  // Reports
-  socket.on('reportUser', ({ username, room, reason }) => {
-    reports.push({ username, room, reason, time: new Date() });
+    cb(logs.filter(l => l.room === room).map(l => l.msg));
   });
 
   socket.on('getReports', (cb) => {
@@ -117,5 +137,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(3000, () => {
-  console.log('Phase 3 backend integration complete.');
+  console.log('ShadowTalk server running on port 3000');
 });
