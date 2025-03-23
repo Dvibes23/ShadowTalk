@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShadowTalk 2050</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Particle Background -->
+  <div id="particles-js" class="particles"></div>
+
+  <!-- Global Dark Mode Toggle -->
+  <div class="global-toggle">
+    <label class="switch">
+      <input type="checkbox" id="darkToggle" />
+      <span class="slider round"></span>
+    </label>
+    <span id="darkLabel">Dark Mode</span>
+  </div>
+
+  <!-- Loader -->
+  <div id="loader" class="loader hidden"></div>
+
+  <!-- Main Container -->
+  <div class="container animated fadeIn">
+
+    <!-- Join Section -->
+    <div id="auth" class="centered glass-panel">
+      <h1 class="glow">ShadowTalk 2050</h1>
+      <input type="text" id="nickname" placeholder="Your nickname" />
+      <input type="text" id="room" placeholder="Room name or leave blank" />
+
+      <label class="glow-label">
+        <input type="checkbox" id="privateRoom" />
+        Private Room
+      </label>
+
+      <input type="password" id="roomPassword" placeholder="Password (optional)" />
+      <button id="enterChatBtn">Enter Chat</button>
+    </div>
+
+    <!-- Chat Room Section -->
+    <div id="chatRoom" class="hidden glass-panel animated fadeInUp">
+      <div id="roomInfo">
+        <h2 id="roomName">Room:</h2>
+        <h4 id="usersList">Users:</h4>
+      </div>
+
+      <!-- Chat Box -->
+      <div id="chatBox" class="neon-box"></div>
+
+      <!-- Input Area -->
+      <div class="inputArea">
+        <input type="text" id="messageInput" placeholder="Type your message..." />
+        <button onclick="sendMessage()">Send</button>
+        <button id="recordBtn" onclick="toggleRecording()">🎤</button>
+      </div>
+
+      <!-- Status Area -->
+      <div id="typingStatus"></div>
+      <div id="recordingNotice" class="hidden"><em>Recording started...</em></div>
+
+      <!-- Report Button -->
+      <button id="reportBtn" onclick="openReportModal()">Report</button>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal hidden">
+      <div class="modal-content neon-border">
+        <h3>Report a user or message</h3>
+        <input type="text" id="reportTarget" placeholder="Username or issue..." />
+        <button onclick="submitReport()">Submit Report</button>
+        <button onclick="closeReportModal()">Cancel</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emoji-button@4.6.4/dist/index.min.js"></script>
+
+  <!-- Init Scripts -->
+  <script>
+    // Particle Background
+    particlesJS.load('particles-js', 'particles.json', () => {
+      console.log('particles.js loaded');
+    });
+
+    // Dark Mode Toggle
+    document.addEventListener('DOMContentLoaded', () => {
+      const darkToggle = document.getElementById('darkToggle');
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark');
+        darkToggle.checked = true;
+      }
+
+      darkToggle.addEventListener('change', () => {
+        const isDark = darkToggle.checked;
+        document.body.classList.toggle('dark', isDark);
+        localStorage.setItem('darkMode', isDark);
+      });
+
+      // Attach Chat Join Button
+      document.getElementById('enterChatBtn').addEventListener('click', enterChat);
+    });
+  </script>
+</body>
+  </html>
