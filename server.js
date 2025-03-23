@@ -35,21 +35,25 @@ app.post('/report', (req, res) => {
   res.json({ success: true });
 });
 
+// Socket handling
 io.on('connection', (socket) => {
 
-  socket.on('joinRoom', ({ username, room, password, isPublic }) => {
-    // Handle random room join
-    if (!room || room.trim() === '') {
-      const available = Object.keys(rooms).find(r => rooms[r].isPublic && rooms[r].users.length > 0);
-      room = available || `room-${Math.floor(Math.random() * 1000)}`;
-    }
+  // Return a public room with users for random join
+  socket.on('findPublicRoom', (cb) => {
+    const publicRoom = Object.entries(rooms).find(([name, info]) =>
+      info.isPublic && info.users.length > 0
+    );
+    cb(publicRoom ? publicRoom[0] : null);
+  });
 
+  // Join Room
+  socket.on('joinRoom', ({ username, room, password, isPublic }) => {
     if (kickedUsers[room]?.includes(username)) {
       socket.emit('kicked', room);
       return;
     }
 
-    // Create new room if not exists
+    // Create room if it doesn’t exist
     if (!rooms[room]) {
       rooms[room] = {
         users: [],
@@ -73,16 +77,19 @@ io.on('connection', (socket) => {
     io.to(room).emit('roomUsers', rooms[room].users);
   });
 
+  // Chat message
   socket.on('chatMessage', (msg) => {
     const fullMsg = `${socket.username}: ${msg}`;
     logs.push({ room: socket.room, msg: fullMsg });
     io.to(socket.room).emit('message', fullMsg);
   });
 
+  // Typing indicator
   socket.on('typing', () => {
     socket.to(socket.room).emit('displayTyping', socket.username);
   });
 
+  // Voice message
   socket.on('voiceMessage', (data) => {
     io.to(socket.room).emit('voiceNote', {
       sender: socket.username,
@@ -90,6 +97,7 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Handle disconnect
   socket.on('disconnect', () => {
     const room = socket.room;
     if (room && rooms[room]) {
@@ -164,6 +172,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// Server start
 server.listen(3000, () => {
   console.log('ShadowTalk 2050 server is live on port 3000');
 });
